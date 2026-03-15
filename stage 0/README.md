@@ -13,7 +13,7 @@
 
 ## פקודות לוגיות (כמו <span dir="ltr">`handleEq`</span> ו־<span dir="ltr">`handleGt`</span>)
 
- <span dir="ltr">**`defn`**</span> – מילת המפתח להגדרת פונקציה חדשה.
+ <span dir="ltr">**`defn`** *</span> – מילת המפתח להגדרת פונקציה חדשה.
 
 * <span dir="ltr">**`[writer counter-atom]`**</span> – הפרמטרים שהפונקציה מקבלת:
   האובייקט שכותב לקובץ והמונה המשמש ליצירת תוויות ייחודיות.
