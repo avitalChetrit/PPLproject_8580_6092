@@ -11,7 +11,7 @@
 
 # 1. ניתוח פונקציות העזר (Helper Functions)
 
-## פקודות לוגיות (כמו <span dir="ltr">`handleEq`</span> ו־<span dir="ltr">`handleGt`</span>)
+## פקודות לוגיות (כמו <span dir="ltr">handleEq</span> ו־<span dir="ltr">handleGt</span>)
 
  <span dir="ltr">**defn**</span> – מילת המפתח להגדרת פונקציה חדשה.
 
@@ -27,7 +27,7 @@
 
 ---
 
-## פקודות זיכרון (כמו <span dir="ltr">`handlePush`</span> ו־<span dir="ltr">`handlePop`</span>)
+## פקודות זיכרון (כמו <span dir="ltr">handlePus`</span> ו־<span dir="ltr">handlePop</span>)
 
 <span dir="ltr">**str**</span> – פונקציה לשרשור (חיבור) מחרוזות.
   היא הופכת משתנים וטקסט למחרוזת אחת ארוכה.
@@ -39,7 +39,7 @@
 
 # 2. עיבוד טקסט ופירוק שורות (Parsing)
 
-בתוך פונקציית <span dir="ltr">**`process-line`**</span> אנו מבצעים ניקוי ופירוק של הפקודות:
+בתוך פונקציית <span dir="ltr">**process-line**</span> אנו מבצעים ניקוי ופירוק של הפקודות:
 
 ```clojure
 (let [words (str/split (str/trim line) #"\s+")])
