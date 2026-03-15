@@ -13,84 +13,151 @@
 
 ## פקודות לוגיות (כמו <span dir="ltr">`handleEq`</span> ו־<span dir="ltr">`handleGt`</span>)
 
-* <span dir="ltr">**`defn`**</span> – מילת המפתח להגדרת פונקציה חדשה.
-
-* <span dir="ltr">**`[writer counter-atom]`**</span> – הפרמטרים שהפונקציה מקבלת:
-  האובייקט שכותב לקובץ והמונה המשמש ליצירת תוויות ייחודיות.
-
-* <span dir="ltr">**`swap!`**</span> – פקודה המשמשת לעדכון ערך של אטום (**Atom**).
-  היא מבטיחה שינוי בטוח של המידע בתוך סביבת הריצה.
-
-* <span dir="ltr">**`inc`**</span> – קיצור של **Increment**, מעלה את הערך המספרי ב־1.
-
-* <span dir="ltr">**`@`**</span> – סימן המשמש לשליפת הערך הנוכחי מתוך האטום (**Dereferencing**).
+<table width="100%">
+<tr>
+<td valign="top">
+<ul style="direction: ltr; text-align: left; list-style-position: inside;">
+  <li><span dir="ltr">**`defn`**</span> – הגדרת פונקציה חדשה.</li>
+  <li><span dir="ltr">**`[writer counter-atom]`**</span> – הפרמטרים שהפונקציה מקבלת.</li>
+  <li><span dir="ltr">**`swap!`**</span> – עדכון ערך של אטום (**Atom**).</li>
+  <li><span dir="ltr">**`inc`**</span> – מעלה את הערך המספרי ב־1.</li>
+  <li><span dir="ltr">**`@`**</span> – שליפת הערך הנוכחי מתוך האטום.</li>
+</ul>
+</td>
+<td valign="top" style="text-align: right; direction: rtl;">
+<ul style="list-style-position: inside;">
+  <li>הגדרת פונקציה חדשה בעברית.</li>
+  <li>פרמטרים שהפונקציה מקבלת.</li>
+  <li>עדכון ערך של אטום (**Atom**).</li>
+  <li>מעלה את הערך המספרי ב־1.</li>
+  <li>שליפת הערך הנוכחי מתוך האטום.</li>
+</ul>
+</td>
+</tr>
+</table>
 
 ---
 
 ## פקודות זיכרון (כמו <span dir="ltr">`handlePush`</span> ו־<span dir="ltr">`handlePop`</span>)
 
-* <span dir="ltr">**`str`**</span> – פונקציה לשרשור (חיבור) מחרוזות.
-  היא הופכת משתנים וטקסט למחרוזת אחת ארוכה.
-
-* <span dir="ltr">**`write`**</span> – קריאה לפונקציית הכתיבה של **Java**
-  כדי להכניס את הטקסט לקובץ הפלט המאוחד.
+<table width="100%">
+<tr>
+<td valign="top">
+<ul style="direction: ltr; text-align: left; list-style-position: inside;">
+  <li><span dir="ltr">**`str`**</span> – חיבור מחרוזות.</li>
+  <li><span dir="ltr">**`write`**</span> – כתיבה לקובץ באמצעות Java.</li>
+</ul>
+</td>
+<td valign="top" style="text-align: right; direction: rtl;">
+<ul style="list-style-position: inside;">
+  <li>חיבור מחרוזות.</li>
+  <li>כתיבה לקובץ.</li>
+</ul>
+</td>
+</tr>
+</table>
 
 ---
 
 # 2. עיבוד טקסט ופירוק שורות (Parsing)
 
-בתוך פונקציית <span dir="ltr">**`process-line`**</span> אנו מבצעים ניקוי ופירוק של הפקודות:
-
-```clojure
-(let [words (str/split (str/trim line) #"\s+")])
-```
-
-| פקודה                                  | תפקיד                                                                                  |
-| -------------------------------------- | -------------------------------------------------------------------------------------- |
-| <span dir="ltr">**`str/trim`**</span>  | ניקוי רווחים מיותרים, טאבים וירידות שורה מהתחלה ומהסוף של השורה                        |
-| <span dir="ltr">**`str/split`**</span> | חיתוך המחרוזת לרשימה (**List**) של מילים נפרדות                                        |
-| <span dir="ltr">**`#"\s+"`**</span>    | ביטוי רגולרי (**Regex**) המורה למחשב לחתוך את הטקסט בכל פעם שהוא פוגש רווח אחד או יותר |
-| <span dir="ltr">**`let`**</span>       | יצירת סביבה זמנית שבה המשתנה `words` מחזיק את רשימת המילים שנוצרה                      |
+<table width="100%">
+<tr>
+<td valign="top">
+<ul style="direction: ltr; text-align: left; list-style-position: inside;">
+  <li><span dir="ltr">**`str/trim`**</span> – ניקוי רווחים, טאבים וירידות שורה.</li>
+  <li><span dir="ltr">**`str/split`**</span> – חיתוך מחרוזת לרשימת מילים.</li>
+  <li><span dir="ltr">**`#"\s+"`**</span> – ביטוי רגולרי לחיתוך רווחים.</li>
+  <li><span dir="ltr">**`let`**</span> – יצירת משתנה זמני עם רשימת מילים.</li>
+</ul>
+</td>
+<td valign="top" style="text-align: right; direction: rtl;">
+<ul style="list-style-position: inside;">
+  <li>ניקוי רווחים, טאבים וירידות שורה.</li>
+  <li>חיתוך מחרוזת לרשימת מילים.</li>
+  <li>ביטוי רגולרי לחיתוך רווחים.</li>
+  <li>יצירת משתנה זמני עם רשימת מילים.</li>
+</ul>
+</td>
+</tr>
+</table>
 
 ---
 
 # 3. לוגיקה ותנאים
 
-* <span dir="ltr">**`when`**</span> – גרסה של `if` שמתבצעת רק אם התנאי אמת (ללא צורך ב־`else`).
-
-* <span dir="ltr">**`and`**</span> – אופרטור לוגי שמבצע את הקוד רק אם כל התנאים נכונים.
-
-* <span dir="ltr">**`seq`**</span> – בודקת האם רצף נתונים (כמו רשימת מילים) אינו ריק.
-
-* <span dir="ltr">**`nil`**</span> – ייצוג של ערך ריק או חוסר ערך ב־Clojure.
+<table width="100%">
+<tr>
+<td valign="top">
+<ul style="direction: ltr; text-align: left; list-style-position: inside;">
+  <li><span dir="ltr">**`when`**</span> – ריצה רק אם התנאי אמת.</li>
+  <li><span dir="ltr">**`and`**</span> – ריצה אם כל התנאים נכונים.</li>
+  <li><span dir="ltr">**`seq`**</span> – בדיקה אם הרצף אינו ריק.</li>
+  <li><span dir="ltr">**`nil`**</span> – ערך ריק או חוסר ערך.</li>
+</ul>
+</td>
+<td valign="top" style="text-align: right; direction: rtl;">
+<ul style="list-style-position: inside;">
+  <li>ריצה רק אם התנאי אמת.</li>
+  <li>ריצה אם כל התנאים נכונים.</li>
+  <li>בדיקה אם הרצף אינו ריק.</li>
+  <li>ערך ריק או חוסר ערך.</li>
+</ul>
+</td>
+</tr>
+</table>
 
 ---
 
 # 4. עבודה עם קבצים (I/O)
 
-* <span dir="ltr">**`io/file`**</span> – הופך מחרוזת טקסט המייצגת נתיב לאובייקט **קובץ** פיזי במערכת.
-
-* <span dir="ltr">**`with-open`**</span> – פתיחת משאב (כמו קורא קבצים) והבטחה שהוא ייסגר אוטומטית
-  בסיום העבודה למניעת דליפות זיכרון.
-
-* <span dir="ltr">**`line-seq`**</span> – הופכת קובץ שלם לרצף של שורות שניתן לעבד אחת אחרי השנייה.
-
-* <span dir="ltr">**`doseq`**</span> – לולאה המיועדת לביצוע פעולות עם **תופעות לוואי**
-  (כמו כתיבה לקובץ) עבור כל איבר ברשימה.
-
-* <span dir="ltr">**`.exists` / `.isDirectory`**</span> – פונקציות Java הבודקות האם הנתיב קיים והאם הוא אכן תיקייה.
-
-* <span dir="ltr">**`.listFiles`**</span> – מחזירה רשימה של כל הקבצים הנמצאים בתוך התיקייה שנבחרה.
+<table width="100%">
+<tr>
+<td valign="top">
+<ul style="direction: ltr; text-align: left; list-style-position: inside;">
+  <li><span dir="ltr">**`io/file`**</span> – יצירת אובייקט קובץ.</li>
+  <li><span dir="ltr">**`with-open`**</span> – פתיחת משאב וסגירה אוטומטית.</li>
+  <li><span dir="ltr">**`line-seq`**</span> – יצירת רצף שורות לעיבוד.</li>
+  <li><span dir="ltr">**`doseq`**</span> – לולאה עם תופעות לוואי.</li>
+  <li><span dir="ltr">**`.exists` / `.isDirectory`**</span> – בדיקת קיום ותיקייה.</li>
+  <li><span dir="ltr">**`.listFiles`**</span> – רשימת הקבצים בתיקייה.</li>
+</ul>
+</td>
+<td valign="top" style="text-align: right; direction: rtl;">
+<ul style="list-style-position: inside;">
+  <li>יצירת אובייקט קובץ.</li>
+  <li>פתיחת משאב וסגירה אוטומטית.</li>
+  <li>יצירת רצף שורות לעיבוד.</li>
+  <li>לולאה עם תופעות לוואי.</li>
+  <li>בדיקת קיום ותיקייה.</li>
+  <li>רשימת הקבצים בתיקייה.</li>
+</ul>
+</td>
+</tr>
+</table>
 
 ---
 
 # 5. אינטראקציה עם המשתמש
 
-* <span dir="ltr">**`& args`**</span> – מאפשר לפונקציית `main` לקבל מספר משתנה של פרמטרים משורת הפקודה.
-
-* <span dir="ltr">**`flush`**</span> – ניקוי הזיכרון הזמני (**Buffer**) והבטחה שהטקסט יודפס למסך באופן מיידי.
-
-* <span dir="ltr">**`read-line`**</span> – עוצר את ריצת התוכנית וממתין לקלט מהמשתמש (לחיצה על Enter).
+<table width="100%">
+<tr>
+<td valign="top">
+<ul style="direction: ltr; text-align: left; list-style-position: inside;">
+  <li><span dir="ltr">**`& args`**</span> – קבלת פרמטרים משתנים לשורת הפקודה.</li>
+  <li><span dir="ltr">**`flush`**</span> – ניקוי Buffer והדפסת הטקסט מיידית.</li>
+  <li><span dir="ltr">**`read-line`**</span> – עצירת ריצה וקבלת קלט מהמשתמש.</li>
+</ul>
+</td>
+<td valign="top" style="text-align: right; direction: rtl;">
+<ul style="list-style-position: inside;">
+  <li>קבלת פרמטרים משתנים לשורת הפקודה.</li>
+  <li>ניקוי Buffer והדפסת הטקסט מיידית.</li>
+  <li>עצירת ריצה וקבלת קלט מהמשתמש.</li>
+</ul>
+</td>
+</tr>
+</table>
 
 ---
 
