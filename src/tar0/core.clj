@@ -14,39 +14,58 @@
 
 ;; --- Helper functions for Arithmetic commands ---
 
+;; --- פונקציות עזר לכתיבת קוד Assembly גנרי ---
+(defn write-asm [writer lines]
+  (doseq [line lines]
+    (.write writer (str line "\n"))))
+
 (defn handleAdd [writer]
   ;; Writes the 'add' command string to the output file
-  (.write writer "command: add\n"))
+  ;; שליפת הערך הראשון ל-D, השני נשאר במחסנית ומחובר ל-D
+  (write-asm writer ["command: add\n" "@SP" "A=M-1" "D=M" "A=A-1" "M=D+M" "@SP" "M=M-1"]))
 
 (defn handleSub [writer]
   ;; Writes the 'sub' command string to the output file
-  (.write writer "command: sub\n"))
+  (write-asm writer ["command: sub\n" "@SP" "A=M-1" "D=M" "A=A-1" "M=D-M" "@SP" "M=M-1"]))
 
 (defn handleNeg [writer]
   ;; Writes the 'neg' command string to the output file
-  (.write writer "command: neg\n"))
+  (write-asm writer ["command: neg\n" "@SP" "A=M-1" "M=-M" "@SP" "M=M-1"]))
 
 ;; --- Helper functions for Logical commands ---
 
+;; --- Logical functions ---
+
 (defn handleEq [writer counter-atom]
-  ;; Increments the logical counter and writes 'eq' with the current count
   (swap! counter-atom inc)
-  (.write writer "command: eq\n")
-  (.write writer (str "counter: " @counter-atom "\n")))
+  (let [current-count @counter-atom
+        label-true (str "IF_TRUE" current-count)
+        label-false (str "IF_FALSE" current-count)]
+    (write-asm writer ["command: eq\n" "@SP" "A=M-1" "D=M" "A=A-1" "D=D-M" (str "@" label-true) "D;JEQ" "D=0" "@SP" "A=M-1" "A=A-1" "M=D" (str "@" label-false) "0;JMP" (str "(" label-true ")")
+                       "D=-1" "@SP" "A=M-1"  "A=A-1" "M=D"  (str "(" label-false ")") "@SP"  "M=M-1" ])
 
-(defn handleGt [writer counter-atom]
-  ;; Increments the logical counter and writes 'gt' with the current count
-  (swap! counter-atom inc)
-  (.write writer "command: gt\n")
-  (.write writer (str "counter: " @counter-atom "\n")))
+    (defn handleGt [writer counter-atom]
+      (swap! counter-atom inc)
+      (let [current-count @counter-atom
+            label-true (str "IF_TRUE" current-count)
+            label-false (str "IF_FALSE" current-count)]
+        (write-asm writer ["@SP" "A=M-1" "D=M" "A=A-1" "D=M-D" (str "@" label-true) "D;JGT" "D=0" "@SP" "A=M-1" "A=A-1" "M=D" (str "@" label-false) "0;JMP" (str "(" label-true ")")
+                           "D=-1" "@SP" "A=M-1"  "A=A-1" "M=D"  (str "(" label-false ")") "@SP"  "M=M-1" ])
+        (.write writer (str "// vm command: gt\n"))
+        (.write writer (str "// counter: " current-count "\n"))))
 
-(defn handleLt [writer counter-atom]
-  ;; Increments the logical counter and writes 'lt' with the current count
-  (swap! counter-atom inc)
-  (.write writer "command: lt\n")
-  (.write writer (str "counter: " @counter-atom "\n")))
+    (defn handleLt [writer counter-atom]
+      (swap! counter-atom inc)
+      (let [current-count @counter-atom
+            label-true (str "IF_TRUE" current-count)
+            label-false (str "IF_FALSE" current-count)]
+        (write-asm writer ["@SP" "A=M-1" "D=M" "A=A-1" "D=M-D" (str "@" label-true) "D;JLT" "D=0" "@SP" "A=M-1" "A=A-1" "M=D" (str "@" label-false) "0;JMP" (str "(" label-true ")")
+                           "D=-1" "@SP" "A=M-1"  "A=A-1" "M=D"  (str "(" label-false ")") "@SP"  "M=M-1" ])
+        (.write writer (str "// vm command: lt\n"))
+        (.write writer (str "// counter: " current-count "\n"))))
 
-(defn handlePush [writer segment index]
+
+    (defn handlePush [writer segment index]
   ;; Receives segment and index as parameters and writes formatted push command
   (.write writer (str "command: push segment " segment " index " index "\n")))
 
