@@ -14,17 +14,23 @@
 
 ;; --- Helper functions for Arithmetic commands ---
 
+;; --- פונקציות עזר לכתיבת קוד Assembly גנרי ---
+(defn write-asm [writer lines]
+  (doseq [line lines]
+    (.write writer (str line "\n"))))
+
 (defn handleAdd [writer]
   ;; Writes the 'add' command string to the output file
-  (.write writer "command: add\n"))
+  ;; שליפת הערך הראשון ל-D, השני נשאר במחסנית ומחובר ל-D
+  (write-asm writer ["command: add\n" "@SP" "A=M-1" "D=M" "A=A-1" "M=D+M" "@SP" "M=M-1"]))
 
 (defn handleSub [writer]
   ;; Writes the 'sub' command string to the output file
-  (.write writer "command: sub\n"))
+  (write-asm writer ["command: sub\n" "@SP" "A=M-1" "D=M" "A=A-1" "M=D-M" "@SP" "M=M-1"]))
 
 (defn handleNeg [writer]
   ;; Writes the 'neg' command string to the output file
-  (.write writer "command: neg\n"))
+  (write-asm writer ["command: neg\n" "@SP" "A=M-1" "M=-M" "@SP" "M=M-1"]))
 
 ;; --- Helper functions for Logical commands ---
 
