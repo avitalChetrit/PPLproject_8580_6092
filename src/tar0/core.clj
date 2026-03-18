@@ -30,7 +30,15 @@
 
 (defn handleNeg [writer]
   ;; Writes the 'neg' command string to the output file
-  (write-asm writer ["command: neg\n" "@SP" "A=M-1" "M=-M" "@SP" "M=M-1"]))
+  (write-asm writer ["command: neg\n" "@SP" "A=M-1" "M=-M"]))
+(defn handleAnd [writer]
+  (write-asm writer ["command: and\n"  "@SP" "A=M-1" "D=M" "A=A-1" "M=D&M" "@SP" "M=M-1"]))
+
+(defn handleOr [writer]
+  (write-asm writer ["command: or\n" "@SP" "A=M-1" "D=M" "A=A-1" "M=D|M" "@SP" "M=M-1"]))
+
+(defn handleNot [writer]
+  (write-asm writer ["command: not\n" "@SP" "A=M-1" "M=!M"]))
 
 ;; --- Helper functions for Logical commands ---
 
@@ -43,13 +51,15 @@
         label-false (str "IF_FALSE" current-count)]
     (write-asm writer ["command: eq\n" "@SP" "A=M-1" "D=M" "A=A-1" "D=D-M" (str "@" label-true) "D;JEQ" "D=0" "@SP" "A=M-1" "A=A-1" "M=D" (str "@" label-false) "0;JMP" (str "(" label-true ")")
                        "D=-1" "@SP" "A=M-1"  "A=A-1" "M=D"  (str "(" label-false ")") "@SP"  "M=M-1" ])
+      (.write writer (str "// vm command: gt\n"))
+      (.write writer (str "// counter: " current-count "\n"))))
 
-    (defn handleGt [writer counter-atom]
-      (swap! counter-atom inc)
-      (let [current-count @counter-atom
-            label-true (str "IF_TRUE" current-count)
-            label-false (str "IF_FALSE" current-count)]
-        (write-asm writer ["@SP" "A=M-1" "D=M" "A=A-1" "D=M-D" (str "@" label-true) "D;JGT" "D=0" "@SP" "A=M-1" "A=A-1" "M=D" (str "@" label-false) "0;JMP" (str "(" label-true ")")
+  (defn handleGt [writer counter-atom]
+    (swap! counter-atom inc)
+    (let [current-count @counter-atom
+          label-true (str "IF_TRUE" current-count)
+          label-false (str "IF_FALSE" current-count)]
+      (write-asm writer ["@SP" "A=M-1" "D=M" "A=A-1" "D=M-D" (str "@" label-true) "D;JGT" "D=0" "@SP" "A=M-1" "A=A-1" "M=D" (str "@" label-false) "0;JMP" (str "(" label-true ")")
                            "D=-1" "@SP" "A=M-1"  "A=A-1" "M=D"  (str "(" label-false ")") "@SP"  "M=M-1" ])
         (.write writer (str "// vm command: gt\n"))
         (.write writer (str "// counter: " current-count "\n"))))
@@ -64,8 +74,8 @@
         (.write writer (str "// vm command: lt\n"))
         (.write writer (str "// counter: " current-count "\n"))))
 
-
-    (defn handlePush [writer segment index]
+;;לעשות את 2 הפונקציות פה ואז להריץ בעז"ה
+(defn handlePush [writer segment index]
   ;; Receives segment and index as parameters and writes formatted push command
   (.write writer (str "command: push segment " segment " index " index "\n")))
 
@@ -86,6 +96,10 @@
         "add"  (handleAdd writer)
         "sub"  (handleSub writer)
         "neg"  (handleNeg writer)
+
+        "and" (handleAnd writer)
+        "or"  (handleOr writer)
+        "not" (handleNot writer)
 
         ;; Comparison commands: also receive the logical-counter to create unique labels
         "eq"   (handleEq writer logical-counter)
