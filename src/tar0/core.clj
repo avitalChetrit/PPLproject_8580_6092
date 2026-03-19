@@ -73,20 +73,21 @@
 
 ;; eq: push true(-1) if equal else false(0)
 (defn handleEq [writer counter]
-  (swap! counter inc)
-  (let [i @counter
-        label-true (str "EQ_TRUE" i)
-        label-false (str "EQ_FALSE" i)]
+  (swap! counter inc);; Increment the counter to create unique labels for this instance
+  (let [i @counter                     ;; Retrieve the current counter value
+        label-true (str "EQ_TRUE" i);; Define a unique label for the "True" case
+        label-false (str "EQ_FALSE" i)];; Define a unique label for the "False" case (end of command)
     (write-asm writer
                ["// eq"
                 "@SP" "AM=M-1" "D=M"
                 "A=A-1" "D=M-D"
-                (str "@" label-true) "D;JEQ"
-                "@SP" "A=M-1" "M=0"
-                (str "@" label-false) "0;JMP"
+                (str "@" label-true) "D;JEQ" ;;If D == 0 (meaning x == y), jump to the TRUE label
+                "@SP" "A=M-1" "M=0";; If not equal (False): set the value at the top of the stack to 0
+                (str "@" label-false) "0;JMP" ;; Jump to the end to skip the TRUE block
                 (str "(" label-true ")")
                 "@SP" "A=M-1" "M=-1"
-                (str "(" label-false ")")])))
+                (str "(" label-false ")")])));; Definition of the FALSE label (End of operation)
+
 
 ;; gt: push true if x > y
 (defn handleGt [writer counter]
@@ -98,11 +99,11 @@
                ["// gt"
                 "@SP" "AM=M-1" "D=M"
                 "A=A-1" "D=M-D"
-                (str "@" label-true) "D;JGT"
-                "@SP" "A=M-1" "M=0"
-                (str "@" label-false) "0;JMP"
+                (str "@" label-true) "D;JGT";; If D > 0 (meaning x > y), jump to TRUE
+                "@SP" "A=M-1" "M=0" ;; Result is False (0)
+                (str "@" label-false) "0;JMP";; Jump to end
                 (str "(" label-true ")")
-                "@SP" "A=M-1" "M=-1"
+                "@SP" "A=M-1" "M=-1";; Result is True (-1)(M=-1)
                 (str "(" label-false ")")])))
 
 ;; lt: push true if x < y
@@ -115,12 +116,12 @@
                ["// lt"
                 "@SP" "AM=M-1" "D=M"
                 "A=A-1" "D=M-D"
-                (str "@" label-true) "D;JLT"
-                "@SP" "A=M-1" "M=0"
-                (str "@" label-false) "0;JMP"
+                (str "@" label-true) "D;JLT" ;; If D < 0 (meaning x < y), jump to TRUE
+                "@SP" "A=M-1" "M=0" ;; Result is False (0)
+                (str "@" label-false) "0;JMP";; Jump to end
                 (str "(" label-true ")")
                 "@SP" "A=M-1" "M=-1"
-                (str "(" label-false ")")])))
+                (str "(" label-false ")")])));; Result is True (-1)=(M=-1)
 
 ;; --------------------------------------------------
 ;; Memory segments
@@ -136,37 +137,46 @@
 ;; push command implementation
 (defn handlePush [writer segment index]
   (case segment
+    ;; --- Push constant value onto the stack ---
     "constant"
     (write-asm writer [(str "// push constant " index)
-                       (str "@" index) "D=A"
+                       (str "@" index) "D=A";; Load the constant value into register D
                        "@SP" "A=M" "M=D"
                        "@SP" "M=M+1"])
-
+    ;; --- Push from base-indexed segments (local, argument, this, that) ---
     ("local" "argument" "this" "that")
     (let [base (segment-map segment)]
+      ;; The line above looks up the mapping (e.g., "local" -> "LCL")
+      ;; to identify which base register to use for address calculation.
       (write-asm writer [(str "// push " segment " " index)
-                         (str "@" index) "D=A"
-                         (str "@" base) "A=M+D"
+                         (str "@" index) "D=A";; Store the index (offset) in D
+                         (str "@" base) "A=M+D";; Calculate target address: Base value + Offset
                          "D=M"
                          "@SP" "A=M" "M=D"
                          "@SP" "M=M+1"]))
-
+    ;; --- Push from temporary segment (temp) - Fixed addresses 5 to 12 ---
     "temp"
     (write-asm writer [(str "// push temp " index)
+                       ;; Calculate absolute address: 5 + index, and fetch value to D
                        (str "@" (+ 5 (Integer/parseInt index)))
                        "D=M"
                        "@SP" "A=M" "M=D"
                        "@SP" "M=M+1"])
 
     "pointer"
+    ;; --- Push from pointer segment (pointer) - Directly accesses THIS or THAT ---
     (let [target (if (= index "0") "THIS" "THAT")]
+      ;; This line checks the index: if it's 0, the target is the THIS register;
+      ;; if it's 1, the target is the THAT register.
       (write-asm writer [(str "// push pointer " index)
-                         (str "@" target) "D=M"
+                         (str "@" target) "D=M"  ;; Fetch the base address stored in THIS/THAT into D
                          "@SP" "A=M" "M=D"
                          "@SP" "M=M+1"]))
 
     "static"
+    ;; --- Push from static segment (static) - Using global labels ---
     (write-asm writer [(str "// push static " index)
+                       ;; Accesses a variable whose name consists of the file name and index
                        (str "@" @current-file-name "." index)
                        "D=M"
                        "@SP" "A=M" "M=D"
@@ -175,30 +185,39 @@
 ;; pop command implementation
 (defn handlePop [writer segment index]
   (case segment
+    ;; --- Pop from base-indexed segments (local, argument, this, that) ---
     ("local" "argument" "this" "that")
     (let [base (segment-map segment)]
+      ;; The line above looks up the mapping (e.g., "local" -> "LCL")
+      ;; to identify which base register to use for address calculation.
       (write-asm writer [(str "// pop " segment " " index)
                          (str "@" index) "D=A"
                          (str "@" base) "D=M+D"
-                         "@R13" "M=D"
+                         "@R13" "M=D";; Temporarily store the target address in R13
                          "@SP" "AM=M-1" "D=M"
                          "@R13" "A=M" "M=D"]))
-
+    ;; --- Pop into temporary segment (temp) - Fixed addresses 5 to 12 ---
     "temp"
     (write-asm writer [(str "// pop temp " index)
                        "@SP" "AM=M-1" "D=M"
+                       ;; Write the value directly to the fixed memory address (5 + index)
                        (str "@" (+ 5 (Integer/parseInt index)))
                        "M=D"])
 
+    ;; --- Pop into pointer segment (pointer) - Directly updates THIS or THAT ---
     "pointer"
     (let [target (if (= index "0") "THIS" "THAT")]
+      ;; This line checks the index: if it's 0, the target is the THIS register;
+      ;; if it's 1, the target is the THAT register.
       (write-asm writer [(str "// pop pointer " index)
                          "@SP" "AM=M-1" "D=M"
-                         (str "@" target) "M=D"]))
+                         (str "@" target) "M=D"]));; Update the THIS or THAT register with the popped value
 
+    ;; --- Pop into static segment (static) - Using global labels ---
     "static"
     (write-asm writer [(str "// pop static " index)
                        "@SP" "AM=M-1" "D=M"
+                       ;; Write the value into the static variable label: [FileName].[Index]
                        (str "@" @current-file-name "." index)
                        "M=D"])))
 
