@@ -75,13 +75,33 @@
         (.write writer (str "// counter: " current-count "\n"))))
 
 ;;לעשות את 2 הפונקציות פה ואז להריץ בעז"ה
-(defn handlePush [writer segment index]
-  ;; Receives segment and index as parameters and writes formatted push command
-  (.write writer (str "command: push segment " segment " index " index "\n")))
 
+;; --- Memory Segment Mapping ---
+(def segment-map {"local" "LCL" "argument" "ARG" "this" "THIS" "that" "THAT"})
+
+;; --- Memory Access Functions ---
+;;להוסיף הערות
+(defn handlePush [writer segment index]
+  (case segment
+    "constant" (write-asm writer [(str "// push constant " index) (str "@" index) "D=A" "@SP" "A=M" "M=D" "@SP" "M=M+1"])
+    ("local" "argument" "this" "that") (let [base (segment-map segment)]
+                                         (write-asm writer [(str "// push " segment " " index) (str "@" index) "D=A" (str "@" base) "A=M+D" "D=M" "@SP" "A=M" "M=D" "@SP" "M=M+1"]))
+    "temp" (write-asm writer [(str "// push temp " index) (str "@" (+ 5 (Integer/parseInt index))) "D=M" "@SP" "A=M" "M=D" "@SP" "M=M+1"])
+    "pointer" (let [target (if (= index "0") "THIS" "THAT")]
+                (write-asm writer [(str "// push pointer " index) (str "@" target) "D=M" "@SP" "A=M" "M=D" "@SP" "M=M+1"]))
+    "static" (write-asm writer [(str "// push static " index) (str "@" @current-file-name "." index) "D=M" "@SP" "A=M" "M=D" "@SP" "M=M+1"])
+    nil))
+
+;;להוסיף הערות
 (defn handlePop [writer segment index]
-  ;; Receives segment and index as parameters and writes formatted pop command
-  (.write writer (str "command: pop segment " segment " index " index "\n")))
+  (case segment
+    ("local" "argument" "this" "that") (let [base (segment-map segment)]
+                                         (write-asm writer [(str "// pop " segment " " index) (str "@" index) "D=A" (str "@" base) "D=M+D" "@R13" "M=D" "@SP" "AM=M-1" "D=M" "@R13" "A=M" "M=D"]))
+    "temp" (write-asm writer [(str "// pop temp " index) "@SP" "AM=M-1" "D=M" (str "@" (+ 5 (Integer/parseInt index))) "M=D"])
+    "pointer" (let [target (if (= index "0") "THIS" "THAT")]
+                (write-asm writer [(str "// pop pointer " index) "@SP" "AM=M-1" "D=M" (str "@" target) "M=D"]))
+    "static" (write-asm writer [(str "// pop static " index) "@SP" "AM=M-1" "D=M" (str "@" @current-file-name "." index) "M=D"])
+    nil))
 
 ;; --- File and folder processing logic ---
 
