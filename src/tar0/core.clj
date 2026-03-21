@@ -226,32 +226,45 @@
 ;; --------------------------------------------------
 
 (defn process-line [line writer counter]
+  ;; --- Clean the input line by removing leading and trailing whitespace ---
   (let [line (str/trim line)]
-    ;; Ignore empty lines and comments
+    ;; --- Ignore the line if it's empty or starts with a comment (//) ---
     (when (and (not (str/blank? line))
                (not (str/starts-with? line "//")))
+      ;; --- Split the line into individual words based on whitespace ---
       (let [words (str/split line #"\s+")]
+        ;; --- Identify the command type and call the corresponding handler ---
         (case (first words)
+          ;; Arithmetic and logical commands
           "add" (handleAdd writer)
           "sub" (handleSub writer)
           "neg" (handleNeg writer)
           "and" (handleAnd writer)
           "or"  (handleOr writer)
           "not" (handleNot writer)
+
+          ;; Comparison commands (require a unique counter for jump labels)
           "eq"  (handleEq writer counter)
           "gt"  (handleGt writer counter)
           "lt"  (handleLt writer counter)
+
+          ;; Memory access commands: take segment name and index as arguments
           "push" (handlePush writer (nth words 1) (nth words 2))
           "pop"  (handlePop writer (nth words 1) (nth words 2))
           nil)))))
 
-;; Process single VM file
+;; --- Process single VM file ---
 (defn process-vm-file [file writer]
   (let [file-name (.getName file)
+        ;; --- Strip the .vm extension to get the base name for static variables ---
         base-name (str/replace file-name #"\.vm$" "")
+        ;; --- Initialize a local counter for this file to ensure unique labels ---
         counter (atom 0)]
+    ;; --- Set the global file name context for 'static' segment handling ---
     (reset! current-file-name base-name)
+    ;; --- Open the VM file for reading ---
     (with-open [r (io/reader file)]
+      ;; --- Iterate through every line in the file and process it ---
       (doseq [line (line-seq r)]
         (process-line line writer counter)))
     (println (str "End of input file: " file-name))))
@@ -261,19 +274,26 @@
 ;; --------------------------------------------------
 
 (defn -main [& args]
+  ;; --- Prompt user for the directory containing .vm files ---
   (println "Please enter the directory path:")
   (flush)
 
   (let [path (read-line)
         dir (io/file path)]
+    ;; --- Check if the provided path is a valid directory ---
     (if (and (.exists dir) (.isDirectory dir))
       (let [dir-name (.getName dir)
+            ;; --- Create the output .asm file named after the directory ---
             output (io/file dir (str dir-name ".asm"))
+            ;; --- Collect, filter for .vm files, and sort them alphabetically ---
             files (->> (.listFiles dir)
                        (filter #(and (.isFile %) (.endsWith (.getName %) ".vm")))
                        (sort-by #(.getName %)))]
+        ;; --- Open the output file writer ---
         (with-open [writer (io/writer output)]
+          ;; --- Process each VM file found in the directory sequence ---
           (doseq [f files]
             (process-vm-file f writer)))
         (println (str "Output file is ready: " (.getName output))))
+      ;; --- Handle cases where the directory path is invalid ---
       (println "Error: Directory not found."))))
