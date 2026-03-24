@@ -245,6 +245,23 @@
 * מיפוי סגמנטים לכתובות בזיכרון
 * עבודה עם מחסנית (Stack-based machine)
 
+  ---
+
+## 🖥️ שימוש בכלי ההדמיה
+
+### CPU Emulator
+ה־CPU Emulator משמש להרצת קוד ה־Assembly שנוצר (קובץ ‎.asm) ומדמה את פעולת המעבד של Hack, כולל בדיקה של ערכי זיכרון ותוצאות החישוב.
+
+נראה דוגמת הרצה:
+<img width="1254" height="892" alt="image" src="https://github.com/user-attachments/assets/1610a91a-59fd-4936-a93e-a98e05ff1bc1" />
+
+### VM Emulator
+ה־VM Emulator מאפשר להריץ ישירות קבצי ‎.vm ולבדוק את ההתנהגות שלהם ברמת המכונה הווירטואלית, לפני תהליך התרגום ל־Assembly.
+
+נראה דוגמת הרצה:
+<img width="1280" height="896" alt="image" src="https://github.com/user-attachments/assets/0b803d0c-8e7b-4cb1-a81e-0e020f7eac4c" />
+
+
 ---
 
 ## ✅ סיכום
