@@ -141,13 +141,8 @@
 
 לדוגמה, מימוש הפקודה `add`:
 
-```clojure
-(defn handleAdd [writer]
-  (write-asm writer
-    ["@SP" "A=M-1" "D=M"
-     "A=A-1" "M=D+M"
-     "@SP" "M=M-1"]))
-```
+<img width="458" height="200" alt="image" src="https://github.com/user-attachments/assets/d4befdb9-fe11-4c40-a7f8-a38ff4c2f5c7" />
+
 
 הפקודה:
 
@@ -164,6 +159,7 @@
   (swap! counter inc)
   ...)
 ```
+
 
 פקודות כמו `eq`, `gt`, `lt` דורשות יצירת **labels ייחודיים** כדי לבצע קפיצות (jump) ב־Assembly.
 לכן נעשה שימוש ב־`atom` שמבטיח שלכל השוואה יהיה מזהה ייחודי.
