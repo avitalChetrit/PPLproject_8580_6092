@@ -220,6 +220,15 @@
                        ;; Write the value into the static variable label: [FileName].[Index]
                        (str "@" @current-file-name "." index)
                        "M=D"])))
+;; --- Program Flow Commands ---
+(defn handleLabel [writer label]
+  (write-asm writer [(str "(" @current-file-name "$" label ")")]))
+
+(defn handleGOTo [writer label]
+  (write-asm writer [(str "@" @current-file-name "$" label) "0 ;JMP"]))
+
+(defn handleIfGOTo [writer label]
+  (write-asm writer [(str "// if-goto" "@SP" "A=M-1" "D=M" @current-file-name "$" label) "D;JNE"]))
 
 ;; --------------------------------------------------
 ;; Processing input lines
