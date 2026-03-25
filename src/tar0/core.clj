@@ -256,7 +256,31 @@
     (write-asm writer [(str "@" func-name) "0;JMP"])
     ;; Return label definition
     (write-asm writer [(str "(" return-label ")") ])))
-;; --------------------------------------------------
+
+(defn handleReturn [writer]
+  (write-asm writer ["// return"
+                     ;; FRAME = LCL
+                     "@LCL" "D=M" "@R14" "M=D"
+                     ;; RET = *(FRAME-5)
+                     "@5" "A=D-A" "D=M" "@R15" "M=D"
+                     ;; *ARG = pop()
+                     "@SP" "A=M-1" "D=M" "@ARG" "M=D"
+                     ;; SP = ARG+1
+                     "@ARG" "D=M+1" "@SP" "M=D"
+                     ;;LCL,ARG,THIS,THAT
+                     ;; THAT=*(FRAME-1)
+                     "@R14" "D=M" "@1" "A=D-A" "D=M" "@THAT" "M=D"
+                     ;; THIS=*(FRAME-1)
+                     "@R14" "D=M" "@1" "A=D-A" "D=M" "@THIS" "M=D"
+                     ;; ARG=*(FRAME-1)
+                     "@R14" "D=M" "@1" "A=D-A" "D=M" "@ARG" "M=D"
+                     ;; LCL=*(FRAME-1)
+                     "@R14" "D=M" "@1" "A=D-A" "D=M" "@LCL" "M=D"
+                     ;;GOTO RET
+                      "@R15" "A=M" "0 ;JMP"]))
+
+
+                     ;; --------------------------------------------------
 ;; Processing input lines
 ;; --------------------------------------------------
 
