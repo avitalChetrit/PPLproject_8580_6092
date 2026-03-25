@@ -11,7 +11,7 @@
 
 ;; Global atom to store current file name (for static segment)
 (def current-file-name (atom ""))
-
+(def call-counter (atom 0))    ;; Counter for unique return labels in function calls
 ;; --------------------------------------------------
 ;; Helper function to write multiple assembly lines
 ;; --------------------------------------------------
@@ -231,6 +231,31 @@
 
 (defn handleIfGOTo [writer label]
   (write-asm writer [(str "// if-goto" "@SP" "A=M-1" "D=M" @current-file-name "$" label) "D;JNE"]))
+
+;; --- Function & Call Commands ---
+
+(defn handleFunction [writer name k]
+  (write-asm writer [(str "(" name ")")])
+  (dotimes [_ (Integer/parseInt k)]
+    (write-asm writer ["@0" "D=A" "@SP" "A=M" "M=D" "@SP" "M=M+1"])))
+
+(defn handleCall [writer func-name n]
+  (swap! call-counter inc)
+  (let [return-label (str "RETURN_LABEL_" @call-counter)]
+    (write-asm writer [(str "// call " func-name " " n)])
+    ;; Push return address
+    (write-asm writer [(str "@" return-label) "D=A" "@SP" "A=M" "M=D" "@SP" "M=M+1"])
+    ;; Push LCL, ARG, THIS, THAT
+    (doseq [seg ["LCL" "ARG" "THIS" "THAT"]]
+      (write-asm writer [(str "@" seg) "D=M" "@SP" "A=M" "M=D" "@SP" "M=M+1"]))
+    ;; ARG = SP - 5 - n
+    (write-asm writer ["@SP" "D=M" "@5" "D=D-A" (str "@" n) "D=D-A" "@ARG" "M=D"])
+    ;; LCL = SP
+    (write-asm writer ["@SP" "D=M" "@LCL" "M=D"])
+    ;; Jump to function
+    (write-asm writer [(str "@" func-name) "0;JMP"])
+    ;; Return label definition
+    (write-asm writer [(str "(" return-label ")") ])))
 ;; --------------------------------------------------
 ;; Processing input lines
 ;; --------------------------------------------------
