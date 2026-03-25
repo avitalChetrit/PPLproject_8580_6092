@@ -11,7 +11,8 @@
 
 ;; Global atom to store current file name (for static segment)
 (def current-file-name (atom ""))
-(def call-counter (atom 0))    ;; Counter for unique return labels in function calls
+;; Counter for unique return labels in function calls
+(def call-counter (atom 0))
 ;; --------------------------------------------------
 ;; Helper function to write multiple assembly lines
 ;; --------------------------------------------------
@@ -223,19 +224,25 @@
 
 
 ;; --- Program Flow Commands ---
+;;Creating a label (label) in the assembly code so we can jump to it later.
+;;The structure (FileName$Label) thus prevents conflicts between identical labels in different files.
 (defn handleLabel [writer label]
   (write-asm writer [(str "(" @current-file-name "$" label ")")]))
 
+;;The function is an unconditional jump, using register A to load the contents and file to the same location.
 (defn handleGOTo [writer label]
-  (write-asm writer [(str "@" @current-file-name "$" label) "0 ;JMP"]))
+  (write-asm writer [(str "@" @current-file-name "$" label) "0;JMP"]))
 
+;;Popping the top value from the stack and jumping to the label only if the value is non-zero (if the condition is True).
 (defn handleIfGOTo [writer label]
-  (write-asm writer [(str "// if-goto" "@SP" "A=M-1" "D=M" @current-file-name "$" label) "D;JNE"]))
+  (write-asm writer [ "// if-goto" "@SP" "A=M-1" "D=M"  (str "@" @current-file-name "$" label) "D;JNE"]))
 
 ;; --- Function & Call Commands ---
 
+;; The function defines an entry point (Label) for a new function and pops k local variables to the value 0 on the stack, equal to the number of variables of the function.
 (defn handleFunction [writer name k]
   (write-asm writer [(str "(" name ")")])
+  ;;This command is a loop, converts the value to INT and executes it according to the size of K.
   (dotimes [_ (Integer/parseInt k)]
     (write-asm writer ["@0" "D=A" "@SP" "A=M" "M=D" "@SP" "M=M+1"])))
 
@@ -264,18 +271,18 @@
                      ;; RET = *(FRAME-5)
                      "@5" "A=D-A" "D=M" "@R15" "M=D"
                      ;; *ARG = pop()
-                     "@SP" "A=M-1" "D=M" "@ARG" "M=D"
+                     "@SP" "A=M-1" "D=M" "@ARG" "A=M" "M=D"
                      ;; SP = ARG+1
                      "@ARG" "D=M+1" "@SP" "M=D"
                      ;;LCL,ARG,THIS,THAT
                      ;; THAT=*(FRAME-1)
                      "@R14" "D=M" "@1" "A=D-A" "D=M" "@THAT" "M=D"
                      ;; THIS=*(FRAME-1)
-                     "@R14" "D=M" "@1" "A=D-A" "D=M" "@THIS" "M=D"
+                     "@R14" "D=M" "@2" "A=D-A" "D=M" "@THIS" "M=D"
                      ;; ARG=*(FRAME-1)
-                     "@R14" "D=M" "@1" "A=D-A" "D=M" "@ARG" "M=D"
+                     "@R14" "D=M" "@3" "A=D-A" "D=M" "@ARG" "M=D"
                      ;; LCL=*(FRAME-1)
-                     "@R14" "D=M" "@1" "A=D-A" "D=M" "@LCL" "M=D"
+                     "@R14" "D=M" "@4" "A=D-A" "D=M" "@LCL" "M=D"
                      ;;GOTO RET
                       "@R15" "A=M" "0 ;JMP"]))
 
