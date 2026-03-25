@@ -97,5 +97,178 @@
 
 ---
 
+# VM Translator – Exercise 1
+
+## 🧠 תיאור כללי
+
+
+בתרגיל זה מימשנו מתרגם משפת VM לשפת Hack Assembly.
+התוכנית מקבלת תיקייה המכילה קבצי `.vm`, מעבדת את כל הקבצים, ומייצרת קובץ פלט אחד בפורמט `.asm`.
+
+המתרגם תומך בפקודות:
+
+* Arithmetic (add, sub, neg, and, or, not)
+* Logical (eq, gt, lt)
+* Memory Access (push, pop)
+
+---
+
+## ⚙️ אופן פעולה
+
+1. המשתמש מזין נתיב לתיקייה
+2. התוכנית מאתרת את כל קבצי `.vm`
+3. כל קובץ נקרא שורה-שורה
+4. כל פקודה מתורגמת לפקודות Hack Assembly
+5. הפלט נכתב לקובץ `.asm` אחד
+
+---
+
+## 🧩 מבנה הקוד
+
+### ✍️ פונקציית עזר לכתיבה
+
+```clojure
+(defn write-asm [writer lines]
+  (doseq [line lines]
+    (.write writer (str line "\n"))))
+```
+
+פונקציה זו מקבלת רשימת שורות Assembly וכותבת אותן לקובץ הפלט.
+
+---
+
+## ➕ פקודות אריתמטיות
+
+לדוגמה, מימוש הפקודה `add`:
+
+<img width="458" height="200" alt="image" src="https://github.com/user-attachments/assets/d4befdb9-fe11-4c40-a7f8-a38ff4c2f5c7" />
+
+
+הפקודה:
+
+* שולפת שני ערכים מהמחסנית
+* מבצעת חיבור
+* שומרת את התוצאה חזרה למחסנית
+
+---
+
+## 🔁 פקודות לוגיות
+
+```clojure
+(defn handleEq [writer counter]
+  (swap! counter inc)
+  ...)
+```
+
+
+פקודות כמו `eq`, `gt`, `lt` דורשות יצירת **labels ייחודיים** כדי לבצע קפיצות (jump) ב־Assembly.
+לכן נעשה שימוש ב־`atom` שמבטיח שלכל השוואה יהיה מזהה ייחודי.
+
+---
+
+## 🧮 פקודות זיכרון (Memory Access)
+
+### push
+
+```clojure
+(defn handlePush [writer segment index]
+```
+
+מממש הכנסת ערך למחסנית בהתאם לסגמנט:
+
+* constant → ערך ישיר
+* local/argument → חישוב כתובת בסיס + offset
+* temp → כתובות קבועות
+* pointer → THIS / THAT
+* static → לפי שם הקובץ
+
+---
+
+### pop
+
+```clojure
+(defn handlePop [writer segment index]
+```
+
+מוציא ערך מהמחסנית ושומר אותו בכתובת המתאימה בזיכרון.
+
+לדוגמה:
+
+* עבור local/argument מתבצע חישוב כתובת ונשמר זמנית ב־R13
+
+---
+
+## 📄 עיבוד שורות קלט
+
+```clojure
+(defn process-line [line writer counter]
+```
+
+הפונקציה:
+
+* מסירה רווחים והערות
+* מפרקת את השורה למילים
+* מזהה את סוג הפקודה
+* מפעילה את פונקציית הטיפול המתאימה
+
+---
+
+## 📂 עיבוד קבצים
+
+```clojure
+(defn process-vm-file [file writer]
+```
+
+* קוראת קובץ VM
+* מעבדת כל שורה
+* שומרת הקשר של שם הקובץ עבור static
+
+---
+
+## 🚀 פונקציית main
+
+```clojure
+(defn -main [& args]
+```
+
+* מבקשת נתיב לתיקייה
+* מאתרת קבצי `.vm`
+* יוצרת קובץ פלט `.asm`
+* מפעילה את התרגום לכל קובץ
+
+---
+
+## 💡 נקודות חשובות
+
+* שימוש ב־`atom` ליצירת labels ייחודיים
+* שימוש ב־`R13` כזיכרון זמני ב־pop
+* מיפוי סגמנטים לכתובות בזיכרון
+* עבודה עם מחסנית (Stack-based machine)
+
+  ---
+
+## 🖥️ שימוש בכלי ההדמיה
+
+### CPU Emulator
+ה־CPU Emulator משמש להרצת קוד ה־Assembly שנוצר (קובץ ‎.asm) ומדמה את פעולת המעבד של Hack, כולל בדיקה של ערכי זיכרון ותוצאות החישוב.
+
+נראה דוגמת הרצה:
+<img width="1254" height="892" alt="image" src="https://github.com/user-attachments/assets/1610a91a-59fd-4936-a93e-a98e05ff1bc1" />
+
+### VM Emulator
+ה־VM Emulator מאפשר להריץ ישירות קבצי ‎.vm ולבדוק את ההתנהגות שלהם ברמת המכונה הווירטואלית, לפני תהליך התרגום ל־Assembly.
+
+נראה דוגמת הרצה:
+<img width="1280" height="896" alt="image" src="https://github.com/user-attachments/assets/0b803d0c-8e7b-4cb1-a81e-0e020f7eac4c" />
+
+
+---
+
+## ✅ סיכום
+
+בתרגיל זה מימשנו מתרגם מלא עבור חלק משמעותי משפת VM.
+התרגיל חיזק את ההבנה שלנו בעבודה עם מחסנית, ניהול זיכרון ותרגום בין שפות ברמות הפשטה שונות.
+
+
 
 </div>
