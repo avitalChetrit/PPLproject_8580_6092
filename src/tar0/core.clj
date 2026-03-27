@@ -235,7 +235,7 @@
 
 ;;Popping the top value from the stack and jumping to the label only if the value is non-zero (if the condition is True).
 (defn handleIfGOTo [writer label]
-  (write-asm writer [ "// if-goto" "@SP" "A=M-1" "D=M"  (str "@" @current-file-name "$" label) "D;JNE"]))
+  (write-asm writer [ "// if-goto" "@SP" "AM=M-1" "D=M"  (str "@" @current-file-name "$" label) "D;JNE"]))
 
 ;; --- Function & Call Commands ---
 
@@ -271,23 +271,24 @@
                      ;; RET = *(FRAME-5)
                      "@5" "A=D-A" "D=M" "@R15" "M=D"
                      ;; *ARG = pop()
-                     "@SP" "A=M-1" "D=M" "@ARG" "A=M" "M=D"
+                     "@SP" "AM=M-1" "D=M"
+                     "@ARG" "A=M" "M=D"
                      ;; SP = ARG+1
                      "@ARG" "D=M+1" "@SP" "M=D"
                      ;;LCL,ARG,THIS,THAT
                      ;; THAT=*(FRAME-1)
-                     "@R14" "D=M" "@1" "A=D-A" "D=M" "@THAT" "M=D"
-                     ;; THIS=*(FRAME-1)
-                     "@R14" "D=M" "@2" "A=D-A" "D=M" "@THIS" "M=D"
-                     ;; ARG=*(FRAME-1)
-                     "@R14" "D=M" "@3" "A=D-A" "D=M" "@ARG" "M=D"
-                     ;; LCL=*(FRAME-1)
-                     "@R14" "D=M" "@4" "A=D-A" "D=M" "@LCL" "M=D"
+                     "@R14" "AM=M-1" "D=M" "@THAT" "M=D"
+                     ;; THIS=*(FRAME-2)
+                     "@R14" "AM=M-1" "D=M" "@THIS" "M=D"
+                     ;; ARG=*(FRAME-3)
+                     "@R14" "AM=M-1" "D=M" "@ARG" "M=D"
+                     ;; LCL=*(FRAME-4)
+                     "@R14" "AM=M-1" "D=M" "@LCL" "M=D"
                      ;;GOTO RET
-                      "@R15" "A=M" "0 ;JMP"]))
+                      "@R15" "A=M" "0;JMP"]))
 
 
-                     ;; --------------------------------------------------
+;; --------------------------------------------------
 ;; Processing input lines
 ;; --------------------------------------------------
 
@@ -317,6 +318,16 @@
           ;; Memory access commands: take segment name and index as arguments
           "push" (handlePush writer (nth words 1) (nth words 2))
           "pop"  (handlePop writer (nth words 1) (nth words 2))
+
+          ;; --- Program flow commands ---
+          "label" (handleLabel writer (nth words 1))
+          "goto" (handleGOTo writer (nth words 1))
+          "if-goto" (handleIfGOTo writer (nth words 1))
+
+          ;; --- Function commands ---
+          "function" (handleFunction writer (nth words 1) (nth words 2))
+          "call" (handleCall writer (nth words 1) (nth words 2))
+          "return" (handleReturn writer)
           nil)))))
 
 ;; --- Process single VM file ---
@@ -334,6 +345,10 @@
       (doseq [line (line-seq r)]
         (process-line line writer counter)))
     (println (str "End of input file: " file-name))))
+
+;; --- Bootstrap Code ---
+
+
 
 ;; --------------------------------------------------
 ;; Main program
@@ -357,6 +372,8 @@
                        (sort-by #(.getName %)))]
         ;; --- Open the output file writer ---
         (with-open [writer (io/writer output)]
+          ;; bootstrap
+          ;;(write-bootstrap writer)
           ;; --- Process each VM file found in the directory sequence ---
           (doseq [f files]
             (process-vm-file f writer)))
