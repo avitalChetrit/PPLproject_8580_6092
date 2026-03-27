@@ -347,7 +347,9 @@
     (println (str "End of input file: " file-name))))
 
 ;; --- Bootstrap Code ---
-
+(defn write-bootstrap [writer]
+  (write-asm writer ["@256" "D=A" "@SP" "M=D"])
+  (handleCall writer "Sys.init" "0"))
 
 
 ;; --------------------------------------------------
