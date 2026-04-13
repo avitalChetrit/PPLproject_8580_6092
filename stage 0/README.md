@@ -343,6 +343,15 @@ dotimes (קיצור של Do Times)
 
 ---
 
+## 📷 דוגמאות הרצה ובדיקות
+BasicLoop:
+<img width="1285" height="901" alt="image" src="https://github.com/user-attachments/assets/0a565bda-412e-4830-a2f6-3d3e5f471bdc" />
+
+NestedCall:
+<img width="1262" height="874" alt="image" src="https://github.com/user-attachments/assets/7f5fdd90-f9b3-49a5-9524-a57004bddb20" />
+
+---
+
 ## 🛠️ מבנה המימוש
 הקוד מחולק למודולים לפי סוגי הפקודות:
 * **פקודות אריתמטיות ולוגיות:** חישובים על גבי המחסנית.
