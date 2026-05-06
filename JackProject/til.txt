@@ -1,0 +1,24 @@
+
+    /** ציור הטיל בעזרת ה-Bitmap */
+    method void draw() {
+        var int memAddress;
+        let memAddress = 16384 + (y * 32) + (x / 16);
+        do Screen.setColor(true);
+        do Memory.poke(memAddress + 0, 0);
+        do Memory.poke(memAddress + 32, 0);
+        do Memory.poke(memAddress + 64, 128);
+        do Memory.poke(memAddress + 96, 448);
+        do Memory.poke(memAddress + 128, 320);
+        do Memory.poke(memAddress + 160, 320);
+        do Memory.poke(memAddress + 192, 864);
+        do Memory.poke(memAddress + 224, 1360);
+        do Memory.poke(memAddress + 256, 1904);
+        do Memory.poke(memAddress + 288, 448);
+        do Memory.poke(memAddress + 320, 544);
+        do Memory.poke(memAddress + 352, 272);
+        do Memory.poke(memAddress + 384, 544);
+        do Memory.poke(memAddress + 416, 1360);
+        do Memory.poke(memAddress + 448, 0);
+        do Memory.poke(memAddress + 480, 0);
+        return;
+    }
