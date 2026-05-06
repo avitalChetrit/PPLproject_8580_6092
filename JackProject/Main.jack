@@ -7,7 +7,7 @@ class Main {
         // Variable declarations
         var char key;         // Stores the ASCII value of the key pressed
         var TilGame tGame;    // Object reference for Tal's TilGame
-        var Avatiah Game aGame;      // Object reference for Avital's AGame
+        var AvatiahGame aGame;      // Object reference for Avital's AGame
         
         // --- STEP 1: INITIAL UI MENU ---
         // moveCursor(row, col): Positions the cursor on the 23x64 character grid.
