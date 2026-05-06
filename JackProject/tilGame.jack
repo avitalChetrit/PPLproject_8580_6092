@@ -1,129 +1,67 @@
-/** 
- * Til.jack - Final integrated implementation of the Rocket object.
+/**
+ * Til: מנהל את הלוגיקה של המשחק, זיהוי מקשים ותנועת הטיל.
  */
 class Til {
+   field TilObject til; // האובייקט של הטיל (הצורה הגרפית)
+   field int direction; // כיוון התנועה: 0=עצור, 1=למעלה, 2=למטה, 3=שמאלה, 4=ימינה
 
-    field int x, y;    // Rocket's location on the screen
-    field int size;    // The size of the rocket area (for erasing and transformation)
-    field int count;   // Action counter for tracking
+   /** בונה משחק חדש וממקם את הטיל במרכז המסך */
+   constructor Til new() {
+      // יצירת הטיל במיקום התחלתי (למשל x=240, y=120)
+      let til = TilObject.new(240, 120);
+      let direction = 0; // בהתחלה הטיל לא זז
+      return this;
+   }
 
-    /** Constructs a new rocket at a given location */
-    constructor Til new(int Ax, int Ay) {
-        let x = Ax;
-        let y = Ay;
-        let size = 16; // Initial rocket size (matches Bitmap dimensions)
-        let count = 0;
-        do draw();
-        return this;
-    }
+   /** משחרר את הזיכרון של המשחק */
+   method void dispose() {
+      do til.dispose();
+      do Memory.deAlloc(this);
+      return;
+   }
 
-    /** Deallocates the object's memory */
-    method void dispose() {
-        do Memory.deAlloc(this);
-        return;
-    }
+   /** מזיז את הטיל לפי הכיוון שנבחר */
+   method void moveTil() {
+      if (direction = 1) { do til.moveUp(); }
+      if (direction = 2) { do til.moveDown(); }
+      if (direction = 3) { do til.moveLeft(); }
+      if (direction = 4) { do til.moveRight(); }
+      do Sys.wait(5); // השהייה קלה כדי שהתנועה לא תהיה מהירה מדי
+      return;
+   }
 
-    /** Draws the rocket on the screen using your custom Bitmap (Memory.poke) */
-    method void draw() {
-        var int memAddress;
-        let memAddress = 16384 + (y * 32) + (x / 16);
-        do Screen.setColor(true);
-        
-        do Memory.poke(memAddress + 0, 0);
-        do Memory.poke(memAddress + 32, 0);
-        do Memory.poke(memAddress + 64, 128);
-        do Memory.poke(memAddress + 96, 448);
-        do Memory.poke(memAddress + 128, 320);
-        do Memory.poke(memAddress + 160, 320);
-        do Memory.poke(memAddress + 192, 864);
-        do Memory.poke(memAddress + 224, 1360);
-        do Memory.poke(memAddress + 256, 1904);
-        do Memory.poke(memAddress + 288, 448);
-        do Memory.poke(memAddress + 320, 544);
-        do Memory.poke(memAddress + 352, 272);
-        do Memory.poke(memAddress + 384, 544);
-        do Memory.poke(memAddress + 416, 1360);
-        do Memory.poke(memAddress + 448, 0);
-        do Memory.poke(memAddress + 480, 0);
-        return;
-    }
+   /** מריץ את המשחק ומטפל בקלט מהמשתמש */
+   method void run() {
+      var char key;  // המקש שנלחץ
+      var boolean exit;
+      let exit = false;
+      
+      while (~exit) {
+         // לולאה שמחכה ללחיצה על מקש
+         while (key = 0) {
+            let key = Keyboard.keyPressed();
+            do moveTil();
+         }
 
-    /** Erases the rocket from the screen using Screen.drawRectangle */
-    method void erase() {
-        do Screen.setColor(false);
-        // Erases a rectangle based on the current 'size'
-        do Screen.drawRectangle(x, y, x + size - 1, y + size - 1);
-        return;
-    }
+         if (key = 81)  { let exit = true; }     // מקש 'q' ליציאה
+         if (key = 90)  { do til.decSize(); }    // מקש 'z' להקטנה
+         if (key = 88)  { do til.incSize(); }    // מקש 'x' להגדלה
+         if (key = 131) { let direction = 1; }   // חץ למעלה
+         if (key = 133) { let direction = 2; }   // חץ למטה
+         if (key = 130) { let direction = 3; }   // חץ שמאלה
+         if (key = 132) { let direction = 4; }   // חץ ימינה
 
-    /** Moves the rocket up */
-    method void moveUp() {
-        if (y > 1) {
-            do erase();
-            let y = y - 2;
-            let count = count + 1;
-            do draw();
-        }
-        return;
-    }
+         // לולאה שמחכה שהמשתמש ישחרר את המקש
+         while (~(key = 0)) {
+            let key = Keyboard.keyPressed();
+            do moveTil();
+         }
+      }
+      return;
+   }
 
-    /** Moves the rocket down */
-    method void moveDown() {
-        if ((y + size) < 254) {
-            do erase();
-            let y = y + 2;
-            let count = count + 1;
-            do draw();
-        }
-        return;
-    }
-
-    /** Moves the rocket left */
-    method void moveLeft() {
-        if (x > 1) {
-            do erase();
-            let x = x - 2;
-            let count = count + 1;
-            do draw();
-        }
-        return;
-    }
-
-    /** Moves the rocket right */
-    method void moveRight() {
-        if ((x + size) < 510) {
-            do erase();
-            let x = x + 2;
-            let count = count + 1;
-            do draw();
-        }
-        return;
-    }
-
-    /** Increases the size of the area (Transformation) */
-    method void incSize() {
-        if (((y + size) < 254) & ((x + size) < 510)) {
-            do erase();
-            let size = size + 2;
-            let count = count + 1;
-            do draw();
-        }
-        return;
-    }
-
-    /** Decreases the size of the area */
-    method void decSize() {
-        if (size > 2) {
-            do erase();
-            let size = size - 2;
-            let count = count + 1;
-            do draw();
-        }
-        return;
-    }
-
-    /** Returns the total amount of actions performed */
-    method int getCount() {
-        return count;
-    }
+   /** מחזיר את כמות הפעולות הסופית לצורך הדפסה ב-Main */
+   method int getFinalCount() {
+      return til.getCount(); // מחזיר את ה-count שנשמר בתוך האובייקט של הטיל
+   }
 }
