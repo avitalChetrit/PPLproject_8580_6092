@@ -1,58 +1,48 @@
 /**
- * TilGame: מנהל את הלוגיקה של המשחק, זיהוי מקשים ותנועת הטיל.
+ * TilGame: מנהל את המשחק בתצורה של "צעד אחד לכל לחיצה".
  */
 class TilGame {
-    field Til til; // האובייקט של הטיל (הצורה הגרפית)
-    field int direction; // כיוון התנועה
+    field Til til; 
 
-    /** בונה משחק חדש וממקם את הטיל במרכז המסך */
-    /** התיקון: שינוי שם הבנאי ל-new וסוג ההחזרה ל-TilGame **/
     constructor TilGame new() {
-        // יצירת הטיל במיקום התחלתי
         let til = Til.new(240, 120);
-        let direction = 0; 
         return this;
     }
 
-    /** יתר המתודות נשארות ללא שינוי **/
-    
     method void dispose() {
         do til.dispose();
         do Memory.deAlloc(this);
         return;
     }
 
-    method void moveTil() {
-        if (direction = 1) { do til.moveUp(); }
-        if (direction = 2) { do til.moveDown(); }
-        if (direction = 3) { do til.moveLeft(); }
-        if (direction = 4) { do til.moveRight(); }
-        do Sys.wait(5);
-        return;
-    }
-
+    /** לוגיקה למניעת תנועה רציפה */
     method void run() {
         var char key;
         var boolean exit;
         let exit = false;
         
         while (~exit) {
+            // 1. המתנה ללחיצה על מקש
             while (key = 0) {
                 let key = Keyboard.keyPressed();
-                do moveTil();
             }
 
+            // 2. ביצוע הפעולה - פעם אחת בלבד ברגע הלחיצה!
             if (key = 81)  { let exit = true; }      // q
-            if (key = 90)  { do til.decSize(); }    // z
-            if (key = 88)  { do til.incSize(); }    // x
-            if (key = 131) { let direction = 1; }   // Up
-            if (key = 133) { let direction = 2; }   // Down
-            if (key = 130) { let direction = 3; }   // Left
-            if (key = 132) { let direction = 4; }   // Right
+            if (key = 90)  { do til.decSize(); }     // z
+            if (key = 88)  { do til.incSize(); }     // x
+            // --- הוספת דרישת הסיבוב ---
+        if (key = 82) { do til.rotate(); }      // r - סיבוב ב-90 מעלות
+            // תנועה בבודדת:
+            if (key = 131) { do til.moveUp(); }      // חץ למעלה
+            if (key = 133) { do til.moveDown(); }    // חץ למטה
+            if (key = 130) { do til.moveLeft(); }    // חץ שמאלה
+            if (key = 132) { do til.moveRight(); }   // חץ ימינה
 
+            // 3. המתנה לשחרור המקש - לולאה ריקה!
+            // כאן התיקון: לא קוראים ל-moveTil() בתוך הלולאה הזו
             while (~(key = 0)) {
                 let key = Keyboard.keyPressed();
-                do moveTil();
             }
         }
         return;
