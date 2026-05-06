@@ -1,31 +1,31 @@
 /**
- * RocketGame: מנהל את הלוגיקה של המשחק, זיהוי מקשים ותנועת הטיל.
+ * Til: מנהל את הלוגיקה של המשחק, זיהוי מקשים ותנועת הטיל.
  */
-class RocketGame {
-   field Rocket rocket; // האובייקט של הטיל
+class Til {
+   field TilObject til; // האובייקט של הטיל (הצורה הגרפית)
    field int direction; // כיוון התנועה: 0=עצור, 1=למעלה, 2=למטה, 3=שמאלה, 4=ימינה
 
    /** בונה משחק חדש וממקם את הטיל במרכז המסך */
-   constructor RocketGame new() {
+   constructor Til new() {
       // יצירת הטיל במיקום התחלתי (למשל x=240, y=120)
-      let rocket = Rocket.new(240, 120);
+      let til = TilObject.new(240, 120);
       let direction = 0; // בהתחלה הטיל לא זז
       return this;
    }
 
    /** משחרר את הזיכרון של המשחק */
    method void dispose() {
-      do rocket.dispose();
+      do til.dispose();
       do Memory.deAlloc(this);
       return;
    }
 
    /** מזיז את הטיל לפי הכיוון שנבחר */
-   method void moveRocket() {
-      if (direction = 1) { do rocket.moveUp(); }
-      if (direction = 2) { do rocket.moveDown(); }
-      if (direction = 3) { do rocket.moveLeft(); }
-      if (direction = 4) { do rocket.moveRight(); }
+   method void moveTil() {
+      if (direction = 1) { do til.moveUp(); }
+      if (direction = 2) { do til.moveDown(); }
+      if (direction = 3) { do til.moveLeft(); }
+      if (direction = 4) { do til.moveRight(); }
       do Sys.wait(5); // השהייה קלה כדי שהתנועה לא תהיה מהירה מדי
       return;
    }
@@ -40,12 +40,12 @@ class RocketGame {
          // לולאה שמחכה ללחיצה על מקש
          while (key = 0) {
             let key = Keyboard.keyPressed();
-            do moveRocket();
+            do moveTil();
          }
 
          if (key = 81)  { let exit = true; }     // מקש 'q' ליציאה
-         if (key = 90)  { do rocket.decSize(); } // מקש 'z' להקטנה
-         if (key = 88)  { do rocket.incSize(); } // מקש 'x' להגדלה
+         if (key = 90)  { do til.decSize(); }    // מקש 'z' להקטנה
+         if (key = 88)  { do til.incSize(); }    // מקש 'x' להגדלה
          if (key = 131) { let direction = 1; }   // חץ למעלה
          if (key = 133) { let direction = 2; }   // חץ למטה
          if (key = 130) { let direction = 3; }   // חץ שמאלה
@@ -54,7 +54,7 @@ class RocketGame {
          // לולאה שמחכה שהמשתמש ישחרר את המקש
          while (~(key = 0)) {
             let key = Keyboard.keyPressed();
-            do moveRocket();
+            do moveTil();
          }
       }
       return;
@@ -62,6 +62,6 @@ class RocketGame {
 
    /** מחזיר את כמות הפעולות הסופית לצורך הדפסה ב-Main */
    method int getFinalCount() {
-      return rocket.getCount(); // מחזיר את ה-count שנשמר בתוך האובייקט של הטיל
+      return til.getCount(); // מחזיר את ה-count שנשמר בתוך האובייקט של הטיל
    }
 }
