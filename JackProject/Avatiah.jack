@@ -1,31 +1,30 @@
 /**
- * Avatiah: מימוש האובייקט הגרפי של האבטיח, כולל ציור ב-Bitmap וניהול מיקום.
+ * Avatiah: Implementation of the graphical object, including bitmap drawing and position management.
  */
 class Avatiah {
-    field int x, y;    // מיקום האבטיח על המסך
-    field int size;    // גודל האזור של האבטיח (לצורך מחיקה ושינוי גודל)
-    field int count;   // מונה פעולות למעקב (Tracking) כפי שנדרש במצגת "עקרונות שיעור 6.pptx"
+    field int x, y;    // Screen position
+    field int size;    // Bounding box size for erasing and transformation
+    field int count;   // Action counter for tracking
 
-    /** בניית אבטיח חדש במיקום נתון */
+    /** Constructs a new Avatiah at a given position */
     constructor Avatiah new(int Ax, int Ay) {
         let x = Ax;
         let y = Ay;
-        let size = 16; // גודל התחלתי
+        let size = 16; 
         let count = 0;
         do draw();
         return this;
     }
 
-    /** שחרור זיכרון */
+    /** Deallocates memory */
     method void dispose() {
         do Memory.deAlloc(this);
         return;
     }
 
-    /** ציור האבטיח על המסך בעזרת Memory.poke לכתובות הזיכרון של המסך */
+    /** Draws the Avatiah on the screen using Memory.poke to the screen memory map */
     method void draw() {
         var int memAddress;
-        // חישוב כתובת הזיכרון לפי x ו-y
         let memAddress = 16384 + (y * 32) + (x / 16);
         
         do Memory.poke(memAddress + 0, 0);
@@ -47,14 +46,14 @@ class Avatiah {
         return;
     }
 
-    /** מחיקת האבטיח לפני תנועה או שינוי גודל */
+    /** Erases the Avatiah from the screen */
     method void erase() {
         do Screen.setColor(false);
         do Screen.drawRectangle(x, y, x + size - 1, y + size - 1);
         return;
     }
 
-    /** פונקציות תנועה - בכל תנועה המונה (count) עולה */
+    /** Movement methods - each increments the action counter */
     method void moveUp() {
         if (y > 1) {
             do erase();
@@ -95,7 +94,7 @@ class Avatiah {
         return;
     }
 
-    /** הגדלת גודל האובייקט (טרנספורמציה) */
+    /** Increases object size (Transformation) */
     method void incSize() {
         if (((y + size) < 254) & ((x + size) < 510)) {
             do erase();
@@ -106,7 +105,7 @@ class Avatiah {
         return;
     }
 
-    /** הקטנת גודל האובייקט */
+    /** Decreases object size */
     method void decSize() {
         if (size > 2) {
             do erase();
@@ -117,7 +116,7 @@ class Avatiah {
         return;
     }
 
-    /** מחזיר את כמות הפעולות שבוצעו לצורך הסיכום בסיום */
+    /** Returns the current action count for the final summary */
     method int getCount() {
         return count;
     }
