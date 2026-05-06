@@ -1,67 +1,64 @@
 /**
- * Til: מנהל את הלוגיקה של המשחק, זיהוי מקשים ותנועת הטיל.
+ * TilGame: מנהל את הלוגיקה של המשחק, זיהוי מקשים ותנועת הטיל.
  */
-class Til {
-   field TilObject til; // האובייקט של הטיל (הצורה הגרפית)
-   field int direction; // כיוון התנועה: 0=עצור, 1=למעלה, 2=למטה, 3=שמאלה, 4=ימינה
+class TilGame {
+    field Til til; // האובייקט של הטיל (הצורה הגרפית)
+    field int direction; // כיוון התנועה
 
-   /** בונה משחק חדש וממקם את הטיל במרכז המסך */
-   constructor Til new() {
-      // יצירת הטיל במיקום התחלתי (למשל x=240, y=120)
-      let til = TilObject.new(240, 120);
-      let direction = 0; // בהתחלה הטיל לא זז
-      return this;
-   }
+    /** בונה משחק חדש וממקם את הטיל במרכז המסך */
+    /** התיקון: שינוי שם הבנאי ל-new וסוג ההחזרה ל-TilGame **/
+    constructor TilGame new() {
+        // יצירת הטיל במיקום התחלתי
+        let til = Til.new(240, 120);
+        let direction = 0; 
+        return this;
+    }
 
-   /** משחרר את הזיכרון של המשחק */
-   method void dispose() {
-      do til.dispose();
-      do Memory.deAlloc(this);
-      return;
-   }
+    /** יתר המתודות נשארות ללא שינוי **/
+    
+    method void dispose() {
+        do til.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
 
-   /** מזיז את הטיל לפי הכיוון שנבחר */
-   method void moveTil() {
-      if (direction = 1) { do til.moveUp(); }
-      if (direction = 2) { do til.moveDown(); }
-      if (direction = 3) { do til.moveLeft(); }
-      if (direction = 4) { do til.moveRight(); }
-      do Sys.wait(5); // השהייה קלה כדי שהתנועה לא תהיה מהירה מדי
-      return;
-   }
+    method void moveTil() {
+        if (direction = 1) { do til.moveUp(); }
+        if (direction = 2) { do til.moveDown(); }
+        if (direction = 3) { do til.moveLeft(); }
+        if (direction = 4) { do til.moveRight(); }
+        do Sys.wait(5);
+        return;
+    }
 
-   /** מריץ את המשחק ומטפל בקלט מהמשתמש */
-   method void run() {
-      var char key;  // המקש שנלחץ
-      var boolean exit;
-      let exit = false;
-      
-      while (~exit) {
-         // לולאה שמחכה ללחיצה על מקש
-         while (key = 0) {
-            let key = Keyboard.keyPressed();
-            do moveTil();
-         }
+    method void run() {
+        var char key;
+        var boolean exit;
+        let exit = false;
+        
+        while (~exit) {
+            while (key = 0) {
+                let key = Keyboard.keyPressed();
+                do moveTil();
+            }
 
-         if (key = 81)  { let exit = true; }     // מקש 'q' ליציאה
-         if (key = 90)  { do til.decSize(); }    // מקש 'z' להקטנה
-         if (key = 88)  { do til.incSize(); }    // מקש 'x' להגדלה
-         if (key = 131) { let direction = 1; }   // חץ למעלה
-         if (key = 133) { let direction = 2; }   // חץ למטה
-         if (key = 130) { let direction = 3; }   // חץ שמאלה
-         if (key = 132) { let direction = 4; }   // חץ ימינה
+            if (key = 81)  { let exit = true; }      // q
+            if (key = 90)  { do til.decSize(); }    // z
+            if (key = 88)  { do til.incSize(); }    // x
+            if (key = 131) { let direction = 1; }   // Up
+            if (key = 133) { let direction = 2; }   // Down
+            if (key = 130) { let direction = 3; }   // Left
+            if (key = 132) { let direction = 4; }   // Right
 
-         // לולאה שמחכה שהמשתמש ישחרר את המקש
-         while (~(key = 0)) {
-            let key = Keyboard.keyPressed();
-            do moveTil();
-         }
-      }
-      return;
-   }
+            while (~(key = 0)) {
+                let key = Keyboard.keyPressed();
+                do moveTil();
+            }
+        }
+        return;
+    }
 
-   /** מחזיר את כמות הפעולות הסופית לצורך הדפסה ב-Main */
-   method int getFinalCount() {
-      return til.getCount(); // מחזיר את ה-count שנשמר בתוך האובייקט של הטיל
-   }
+    method int getFinalCount() {
+        return til.getCount();
+    }
 }
