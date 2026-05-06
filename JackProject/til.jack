@@ -1,12 +1,12 @@
-/** Rocket.jack - מימוש סופי ומאוחד של הטיל בשיטת ה-Square */
-class Rocket {
+/** Til.jack - מימוש סופי ומאוחד של הטיל בשיטת ה-Square */
+class Til {
 
     field int x, y;    // מיקום הטיל על המסך
     field int size;    // גודל האזור של הטיל (לצורך מחיקה וטרנספורמציה)
-   field int count;   // מונה פעולות למעקב (Tracking)
+    field int count;   // מונה פעולות למעקב (Tracking)
 
     /** בניית טיל חדש במיקום נתון */
-    constructor Rocket new(int Ax, int Ay) {
+    constructor Til new(int Ax, int Ay) {
         let x = Ax;
         let y = Ay;
         let size = 16; // גודל התחלתי של הטיל (מתאים ל-Bitmap)
@@ -124,5 +124,4 @@ class Rocket {
     method int getCount() {
         return count;
     }
-
 }
