@@ -1,0 +1,124 @@
+/**
+ * Avatiah: מימוש האובייקט הגרפי של האבטיח, כולל ציור ב-Bitmap וניהול מיקום.
+ */
+class Avatiah {
+    field int x, y;    // מיקום האבטיח על המסך
+    field int size;    // גודל האזור של האבטיח (לצורך מחיקה ושינוי גודל)
+    field int count;   // מונה פעולות למעקב (Tracking) כפי שנדרש במצגת "עקרונות שיעור 6.pptx"
+
+    /** בניית אבטיח חדש במיקום נתון */
+    constructor Avatiah new(int Ax, int Ay) {
+        let x = Ax;
+        let y = Ay;
+        let size = 16; // גודל התחלתי
+        let count = 0;
+        do draw();
+        return this;
+    }
+
+    /** שחרור זיכרון */
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** ציור האבטיח על המסך בעזרת Memory.poke לכתובות הזיכרון של המסך */
+    method void draw() {
+        var int memAddress;
+        // חישוב כתובת הזיכרון לפי x ו-y
+        let memAddress = 16384 + (y * 32) + (x / 16);
+        
+        do Memory.poke(memAddress + 0, 0);
+        do Memory.poke(memAddress + 32, 0);
+        do Memory.poke(memAddress + 64, 0);
+        do Memory.poke(memAddress + 96, 0);
+        do Memory.poke(memAddress + 128, 0);
+        do Memory.poke(memAddress + 160, 0);
+        do Memory.poke(memAddress + 192, 6192);
+        do Memory.poke(memAddress + 224, 6096);
+        do Memory.poke(memAddress + 256, 4752);
+        do Memory.poke(memAddress + 288, 5456);
+        do Memory.poke(memAddress + 320, 2720);
+        do Memory.poke(memAddress + 352, 1984);
+        do Memory.poke(memAddress + 384, 0);
+        do Memory.poke(memAddress + 416, 0);
+        do Memory.poke(memAddress + 448, 0);
+        do Memory.poke(memAddress + 480, 0);
+        return;
+    }
+
+    /** מחיקת האבטיח לפני תנועה או שינוי גודל */
+    method void erase() {
+        do Screen.setColor(false);
+        do Screen.drawRectangle(x, y, x + size - 1, y + size - 1);
+        return;
+    }
+
+    /** פונקציות תנועה - בכל תנועה המונה (count) עולה */
+    method void moveUp() {
+        if (y > 1) {
+            do erase();
+            let y = y - 2;
+            let count = count + 1;
+            do draw();
+        }
+        return;
+    }
+
+    method void moveDown() {
+        if ((y + size) < 254) {
+            do erase();
+            let y = y + 2;
+            let count = count + 1;
+            do draw();
+        }
+        return;
+    }
+
+    method void moveLeft() {
+        if (x > 1) {
+            do erase();
+            let x = x - 2;
+            let count = count + 1;
+            do draw();
+        }
+        return;
+    }
+
+    method void moveRight() {
+        if ((x + size) < 510) {
+            do erase();
+            let x = x + 2;
+            let count = count + 1;
+            do draw();
+        }
+        return;
+    }
+
+    /** הגדלת גודל האובייקט (טרנספורמציה) */
+    method void incSize() {
+        if (((y + size) < 254) & ((x + size) < 510)) {
+            do erase();
+            let size = size + 2;
+            let count = count + 1;
+            do draw();
+        }
+        return;
+    }
+
+    /** הקטנת גודל האובייקט */
+    method void decSize() {
+        if (size > 2) {
+            do erase();
+            let size = size - 2;
+            let count = count + 1;
+            do draw();
+        }
+        return;
+    }
+
+    /** מחזיר את כמות הפעולות שבוצעו לצורך הסיכום בסיום */
+    method int getCount() {
+        return count;
+    }
+}

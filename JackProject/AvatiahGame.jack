@@ -1,0 +1,67 @@
+/**
+ * AvatiahGame: מנהל את הלוגיקה של המשחק, זיהוי מקשים ותנועת האבטיח.
+ */
+class AvatiahGame {
+   field Avatiah avatiah; // האובייקט של האבטיח (הצורה הגרפית)
+   field int direction;   // כיוון התנועה: 0=עצור, 1=למעלה, 2=למטה, 3=שמאלה, 4=ימינה
+
+   /** בונה משחק חדש וממקם את האבטיח במרכז המסך */
+   constructor AvatiahGame new() {
+      // יצירת האבטיח במיקום התחלתי
+      let avatiah = Avatiah.new(240, 120);
+      let direction = 0; // בהתחלה האבטיח לא זז
+      return this;
+   }
+
+   /** משחרר את הזיכרון של המשחק והאובייקטים שלו */
+   method void dispose() {
+      do avatiah.dispose();
+      do Memory.deAlloc(this);
+      return;
+   }
+
+   /** מזיז את האבטיח לפי הכיוון שנבחר */
+   method void moveAvatiah() {
+      if (direction = 1) { do avatiah.moveUp(); }
+      if (direction = 2) { do avatiah.moveDown(); }
+      if (direction = 3) { do avatiah.moveLeft(); }
+      if (direction = 4) { do avatiah.moveRight(); }
+      do Sys.wait(5); // השהייה קלה כדי לשלוט במהירות התנועה
+      return;
+   }
+
+   /** מריץ את המשחק ומטפל בקלט מהמשתמש (לולאת המשחק) */
+   method void run() {
+      var char key;  
+      var boolean exit;
+      let exit = false;
+      
+      while (~exit) {
+         // לולאה שמחכה ללחיצה על מקש תוך כדי תנועה
+         while (key = 0) {
+            let key = Keyboard.keyPressed();
+            do moveAvatiah();
+         }
+
+         if (key = 81)  { let exit = true; }      // מקש 'q' ליציאה
+         if (key = 90)  { do avatiah.decSize(); }  // מקש 'z' להקטנה
+         if (key = 88)  { do avatiah.incSize(); }  // מקש 'x' להגדלה
+         if (key = 131) { let direction = 1; }    // חץ למעלה
+         if (key = 133) { let direction = 2; }    // חץ למטה
+         if (key = 130) { let direction = 3; }    // חץ שמאלה
+         if (key = 132) { let direction = 4; }    // חץ ימינה
+
+         // לולאה שמחכה שהמשתמש ישחרר את המקש
+         while (~(key = 0)) {
+            let key = Keyboard.keyPressed();
+            do moveAvatiah();
+         }
+      }
+      return;
+   }
+
+   /** מחזיר את כמות הפעולות הסופית לצורך הדפסה ב-Main */
+   method int getFinalCount() {
+      return avatiah.getCount(); 
+   }
+}
