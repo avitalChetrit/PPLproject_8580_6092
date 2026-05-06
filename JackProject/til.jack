@@ -1,117 +1,151 @@
-/** Til.jack - מימוש סופי ומאוחד של הטיל בשיטת ה-Square */
+/** 
+ * Til: מחלקה המייצגת את הטיל.
+ * כוללת גוף, ראש ורגליים, ותומכת בתנועה, גודל וסיבוב.
+ */
 class Til {
+    field int x, y;       // מיקום
+    field int size;      // גודל
+    field int count;     // מונה פעולות
+    field int rotation;  // מצב סיבוב (0-3)
 
-    field int x, y;    // מיקום הטיל על המסך
-    field int size;    // גודל האזור של הטיל (לצורך מחיקה וטרנספורמציה)
-    field int count;   // מונה פעולות למעקב (Tracking)
-
-    /** בניית טיל חדש במיקום נתון */
+    /** בונה טיל חדש */
     constructor Til new(int Ax, int Ay) {
         let x = Ax;
         let y = Ay;
-        let size = 16; // גודל התחלתי של הטיל (מתאים ל-Bitmap)
+        let size = 20;
         let count = 0;
+        let rotation = 0;
         do draw();
         return this;
     }
 
-    /** משחרר את הזיכרון של האובייקט */
+    /** שחרור זיכרון */
     method void dispose() {
         do Memory.deAlloc(this);
         return;
     }
 
-    /** ציור הטיל על המסך בעזרת ה-Bitmap שלך (Memory.poke) */
+    /** סיבוב ב-90 מעלות */
+    method void rotate() {
+        do erase();
+        let rotation = rotation + 1;
+        if (rotation > 3) {
+            let rotation = 0;
+        }
+        let count = count + 1;
+        do draw();
+        return;
+    }
+
+    /** ציור הטיל: גוף, ראש ורגליים */
     method void draw() {
-        var int memAddress;
-        let memAddress = 16384 + (y * 32) + (x / 16);
         do Screen.setColor(true);
         
-        do Memory.poke(memAddress + 0, 0);
-        do Memory.poke(memAddress + 32, 0);
-        do Memory.poke(memAddress + 64, 128);
-        do Memory.poke(memAddress + 96, 448);
-        do Memory.poke(memAddress + 128, 320);
-        do Memory.poke(memAddress + 160, 320);
-        do Memory.poke(memAddress + 192, 864);
-        do Memory.poke(memAddress + 224, 1360);
-        do Memory.poke(memAddress + 256, 1904);
-        do Memory.poke(memAddress + 288, 448);
-        do Memory.poke(memAddress + 320, 544);
-        do Memory.poke(memAddress + 352, 272);
-        do Memory.poke(memAddress + 384, 544);
-        do Memory.poke(memAddress + 416, 1360);
-        do Memory.poke(memAddress + 448, 0);
-        do Memory.poke(memAddress + 480, 0);
+        // 1. ציור גוף הטיל (מלבן)
+        if ((rotation = 0) | (rotation = 2)) {
+            do Screen.drawRectangle(x, y, x + size, y + (size + 10));
+        } else {
+            do Screen.drawRectangle(x, y, x + (size + 10), y + size);
+        }
+
+        // 2. ציור ראש הטיל (משולש)
+        if (rotation = 0) { // למעלה
+            do Screen.drawLine(x, y, x + (size / 2), y - size);
+            do Screen.drawLine(x + (size / 2), y - size, x + size, y);
+        }
+        if (rotation = 1) { // ימינה
+            do Screen.drawLine(x + size + 10, y, x + (size * 2), y + (size / 2));
+            do Screen.drawLine(x + (size * 2), y + (size / 2), x + size + 10, y + size);
+        }
+        if (rotation = 2) { // למטה
+            do Screen.drawLine(x, y + size + 10, x + (size / 2), y + (size * 2));
+            do Screen.drawLine(x + (size / 2), y + (size * 2), x + size, y + size + 10);
+        }
+        if (rotation = 3) { // שמאלה
+            do Screen.drawLine(x, y, x - size, y + (size / 2));
+            do Screen.drawLine(x - size, y + (size / 2), x, y + size);
+        }
+
+        // 3. ציור הרגליים (סנפירים)
+        if (rotation = 0) { // למעלה - רגליים בתחתית
+            do Screen.drawLine(x, y + size + 10, x - (size / 4), y + (size * 2));
+            do Screen.drawLine(x + size, y + size + 10, x + size + (size / 4), y + (size * 2));
+        }
+        if (rotation = 1) { // ימינה - רגליים בצד שמאל
+            do Screen.drawLine(x, y, x - (size / 2), y - (size / 4));
+            do Screen.drawLine(x, y + size, x - (size / 2), y + size + (size / 4));
+        }
+        if (rotation = 2) { // למטה - רגליים למעלה
+            do Screen.drawLine(x, y, x - (size / 4), y - (size / 2));
+            do Screen.drawLine(x + size, y, x + size + (size / 4), y - (size / 2));
+        }
+        if (rotation = 3) { // שמאלה - רגליים בצד ימין
+            do Screen.drawLine(x + size + 10, y, x + (size * 2), y - (size / 4));
+            do Screen.drawLine(x + size + 10, y + size, x + (size * 2), y + size + (size / 4));
+        }
+
         return;
     }
 
-    /** מחיקת הטיל מהמסך בעזרת Screen.drawRectangle */
+    /** מחיקה מהמסך */
     method void erase() {
         do Screen.setColor(false);
-        // מוחק מלבן בגודל הנוכחי של size
-        do Screen.drawRectangle(x, y, x + size - 1, y + size - 1);
+        // מחיקת שטח מספיק גדול כדי לנקות גם את הרגליים והראש
+        do Screen.drawRectangle(x - size, y - size, x + (size * 2), y + (size * 2));
         return;
     }
 
-    /** תנועה למעלה */
+    /** תנועה וגודל */
     method void moveUp() {
-        if (y > 1) {
+        if (y > 30) {
             do erase();
-            let y = y - 2;
+            let y = y - 5;
             let count = count + 1;
             do draw();
         }
         return;
     }
 
-    /** תנועה למטה */
     method void moveDown() {
-        if ((y + size) < 254) {
+        if (y < 220) {
             do erase();
-            let y = y + 2;
+            let y = y + 5;
             let count = count + 1;
             do draw();
         }
         return;
     }
 
-    /** תנועה שמאלה */
     method void moveLeft() {
-        if (x > 1) {
+        if (x > 30) {
             do erase();
-            let x = x - 2;
+            let x = x - 5;
             let count = count + 1;
             do draw();
         }
         return;
     }
 
-    /** תנועה ימינה */
     method void moveRight() {
-        if ((x + size) < 510) {
+        if (x < 480) {
             do erase();
-            let x = x + 2;
+            let x = x + 5;
             let count = count + 1;
             do draw();
         }
         return;
     }
 
-    /** הגדלת גודל האזור (Transformation) */
     method void incSize() {
-        if (((y + size) < 254) & ((x + size) < 510)) {
-            do erase();
-            let size = size + 2;
-            let count = count + 1;
-            do draw();
-        }
+        do erase();
+        let size = size + 2;
+        let count = count + 1;
+        do draw();
         return;
     }
 
-    /** הקטנת גודל האזור */
     method void decSize() {
-        if (size > 2) {
+        if (size > 10) {
             do erase();
             let size = size - 2;
             let count = count + 1;
@@ -120,7 +154,6 @@ class Til {
         return;
     }
 
-    /** מחזיר את כמות הפעולות שבוצעו */
     method int getCount() {
         return count;
     }
