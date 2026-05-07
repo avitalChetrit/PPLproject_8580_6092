@@ -1,63 +1,74 @@
-/**
- * Avatiah: Implementation of the graphical object, including bitmap drawing and position management.
+/** * Represents a Watermelon (Avatiah) shaped like a bowl (half-circle).
+ * Optimized to prevent flickering and matches Til.jack's logic. [cite: 44, 45]
  */
 class Avatiah {
-    field int x, y;    // Screen position
-    field int size;    // Bounding box size for erasing and transformation
-    field int count;   // Action counter for tracking
+    field int x, y;       
+    field int size;      
+    field int count;     
+    field int rotation;  
 
-    /** Constructs a new Avatiah at a given position */
     constructor Avatiah new(int Ax, int Ay) {
         let x = Ax;
         let y = Ay;
-        let size = 16; 
-        let count = 0;
+        let size = 20;    // Starting size [cite: 52]
+        let count = 0;    
+        let rotation = 0; 
         do draw();
         return this;
     }
 
-    /** Deallocates memory */
     method void dispose() {
-        do Memory.deAlloc(this);
+        do Memory.deAlloc(this); // Memory cleanup [cite: 56]
         return;
     }
 
-    /** Draws the Avatiah on the screen using Memory.poke to the screen memory map */
+    method void rotate() {
+        do erase();
+        let rotation = rotation + 1;
+        if (rotation > 3) { let rotation = 0; } // Cycle through 4 states [cite: 60, 61]
+        let count = count + 1;
+        do draw();
+        return;
+    }
+
+    /** * Draws a "Bowl" shaped watermelon using staggered lines and rectangles.
+     * This creates a curved look without the heavy drawCircle command. [cite: 63, 65]
+     */
     method void draw() {
-        var int memAddress;
-        let memAddress = 16384 + (y * 32) + (x / 16);
+        do Screen.setColor(true); 
         
-        do Memory.poke(memAddress + 0, 0);
-        do Memory.poke(memAddress + 32, 0);
-        do Memory.poke(memAddress + 64, 0);
-        do Memory.poke(memAddress + 96, 0);
-        do Memory.poke(memAddress + 128, 0);
-        do Memory.poke(memAddress + 160, 0);
-        do Memory.poke(memAddress + 192, 6192);
-        do Memory.poke(memAddress + 224, 6096);
-        do Memory.poke(memAddress + 256, 4752);
-        do Memory.poke(memAddress + 288, 5456);
-        do Memory.poke(memAddress + 320, 2720);
-        do Memory.poke(memAddress + 352, 1984);
-        do Memory.poke(memAddress + 384, 0);
-        do Memory.poke(memAddress + 416, 0);
-        do Memory.poke(memAddress + 448, 0);
-        do Memory.poke(memAddress + 480, 0);
+        // --- The "Bowl" Shape (Half-watermelon) ---
+        // Base rectangle (The meat)
+        do Screen.drawRectangle(x + 4, y + 10, x + (size * 2) - 4, y + 16);
+        // Middle layer (Slightly narrower)
+        do Screen.drawRectangle(x + 8, y + 16, x + (size * 2) - 8, y + 20);
+        // Bottom tip (The curve)
+        do Screen.drawRectangle(x + 12, y + 20, x + (size * 2) - 12, y + 22);
+        // Top flat line (The top of the bowl)
+        do Screen.drawLine(x, y + 10, x + (size * 2), y + 10);
+
+        // --- The Seeds (Black dots) ---
+        // Placing seeds inside the bowl area
+        do Screen.drawRectangle(x + size, y + 14, x + size + 1, y + 15);
+        do Screen.drawRectangle(x + (size - 6), y + 12, x + (size - 5), y + 13);
+        do Screen.drawRectangle(x + (size + 6), y + 12, x + (size + 7), y + 13);
+        
         return;
     }
 
-    /** Erases the Avatiah from the screen */
+    /** Erases the watermelon area completely. [cite: 85, 86] */
     method void erase() {
         do Screen.setColor(false);
-        do Screen.drawRectangle(x, y, x + size - 1, y + size - 1);
+        // Wipe a large enough area to clear all parts [cite: 87]
+        do Screen.drawRectangle(x - 5, y - 5, x + (size * 2) + 5, y + 30);
         return;
     }
 
-    /** Movement methods - each increments the action counter */
+    /** Movement logic strictly matching Til.jack. [cite: 89, 92, 94, 96] */
     method void moveUp() {
-        if (y > 1) {
+        if (y > 30) {
             do erase();
-            let y = y - 2;
+            let y = y - 5;
             let count = count + 1;
             do draw();
         }
@@ -65,9 +76,9 @@ class Avatiah {
     }
 
     method void moveDown() {
-        if ((y + size) < 254) {
+        if (y < 220) {
             do erase();
-            let y = y + 2;
+            let y = y + 5;
             let count = count + 1;
             do draw();
         }
@@ -75,9 +86,9 @@ class Avatiah {
     }
 
     method void moveLeft() {
-        if (x > 1) {
+        if (x > 30) {
             do erase();
-            let x = x - 2;
+            let x = x - 5;
             let count = count + 1;
             do draw();
         }
@@ -85,39 +96,32 @@ class Avatiah {
     }
 
     method void moveRight() {
-        if ((x + size) < 510) {
+        if (x < 480) {
             do erase();
-            let x = x + 2;
+            let x = x + 5;
             let count = count + 1;
             do draw();
         }
         return;
     }
 
-    /** Increases object size (Transformation) */
     method void incSize() {
-        if (((y + size) < 254) & ((x + size) < 510)) {
-            do erase();
-            let size = size + 2;
-            let count = count + 1;
-            do draw();
-        }
+        do erase();
+        let size = size + 2; // Scaling up [cite: 99]
+        let count = count + 1;
+        do draw();
         return;
     }
 
-    /** Decreases object size */
     method void decSize() {
-        if (size > 2) {
+        if (size > 10) {
             do erase();
-            let size = size - 2;
+            let size = size - 2; // Scaling down [cite: 102]
             let count = count + 1;
             do draw();
         }
         return;
     }
 
-    /** Returns the current action count for the final summary */
-    method int getCount() {
-        return count;
-    }
+    method int getCount() { return count; } // Tracking operations [cite: 104]
 }
