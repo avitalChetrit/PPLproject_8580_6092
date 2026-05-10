@@ -1,0 +1,41 @@
+class ArticGame {
+    field Artic artic;
+
+    constructor ArticGame new() {
+        let artic = Artic.new(240, 120);
+        return this;
+    }
+
+    method void dispose() {
+        do artic.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void run() {
+        var char key;
+        var boolean exit;
+        let exit = false;
+        while (~exit) {
+            while (key = 0) {
+                let key = Keyboard.keyPressed();
+            }
+            if (key = 81) { let exit = true; }
+            if (key = 90) { do artic.decSize(); }
+            if (key = 88) { do artic.incSize(); }
+            if (key = 82) { do artic.rotate(); }
+            if (key = 131) { do artic.moveUp(); }
+            if (key = 133) { do artic.moveDown(); }
+            if (key = 130) { do artic.moveLeft(); }
+            if (key = 132) { do artic.moveRight(); }
+            while (~(key = 0)) {
+                let key = Keyboard.keyPressed();
+            }
+        }
+        return;
+    }
+
+    method int getFinalCount() {
+        return artic.getCount();
+    }
+}
