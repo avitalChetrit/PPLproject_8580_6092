@@ -159,10 +159,13 @@ class Til {
      * Increases the size variable which affects all drawing calculations.
      */
     method void incSize() {
+if ((x > (size + 5)) & (x + (size * 2) < 505) & 
+        (y > (size + 5)) & (y + (size * 2) < 250)) {
         do erase();
         let size = size + 2;
         let count = count + 1;
         do draw();
+}
         return;
     }
 
