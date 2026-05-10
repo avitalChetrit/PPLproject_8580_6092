@@ -7,14 +7,14 @@ class Main {
         // Variable declarations
         var char key;         // Stores the ASCII value of the key pressed
         var TilGame tGame;    // Object reference for Tal's TilGame
-        var AvatiahGame aGame;      // Object reference for Avital's AGame
+        var ArticGame aGame;      // Object reference for Avital's AGame
         
         // --- STEP 1: INITIAL UI MENU ---
         // moveCursor(row, col): Positions the cursor on the 23x64 character grid.
         do Output.moveCursor(10, 15);
         do Output.printString("Press 'T' for Til Game");
         do Output.moveCursor(12, 15);
-        do Output.printString("Press 'A' for Avatiah Game");
+        do Output.printString("Press 'A' for Artic Game");
 
         // --- STEP 2: INPUT LISTENER LOOP ---
         // Wait until 'T' (ASCII 84) or 'A' (ASCII 65) is pressed.
@@ -51,13 +51,13 @@ class Main {
         // OPTION 2: A AGame selected
         if (key = 65) {
  // Instantiate the game engine and enter the main game loop
-            let aGame = AvatiahGame.new();   
+            let aGame = ArticGame.new();   
             do aGame.run();         
             
             // Post-game cleanup and result display
             do Screen.clearScreen();
             do Output.moveCursor(10, 20);
-            do Output.printString("Avatiah Game Over!");
+            do Output.printString("Artic Game Over!");
             
             // Tracking Actions for Avital's game
             do Output.moveCursor(12, 15);
