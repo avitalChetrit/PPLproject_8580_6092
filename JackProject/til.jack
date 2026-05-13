@@ -1,0 +1,190 @@
+/** * Represents a Rocket (Til) graphical object.
+ * Supports 2D transformations: translation (movement), scaling (size change),
+ * and 90-degree rotation, while tracking the total number of operations performed.
+ */
+class Til {
+    // Class fields - represent the object's state in memory
+    field int x, y;       // Top-left coordinates of the rocket's body
+    field int size;      // Auxiliary variable determining the scale of all rocket parts
+    field int count;     // Cumulative counter for every transformation performed by the user
+    field int rotation;  // State variable for orientation: 0=Up, 1=Right, 2=Down, 3=Left
+
+    /** * Constructor: Creates a new Rocket object.
+     * Initializes position, size, counter, and orientation, and renders the initial image.
+     */
+    constructor Til new(int Ax, int Ay) {
+        let x = Ax;
+        let y = Ay;
+        let size = 20;    // Set initial size
+        let count = 0;    // Reset operation counter
+        let rotation = 0; // Initial orientation (Facing Up)
+        do draw();
+        return this;
+    }
+
+    /** * Deallocates the object's memory from the Heap.
+     */
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** * Rotation Transformation: Rotates the rocket 90 degrees clockwise.
+     * Erases the current image, updates the rotation state, and re-renders.
+     */
+    method void rotate() {
+        do erase();
+        let rotation = rotation + 1;
+        
+        // Modulo 4 logic to cycle through the four possible directions
+        if (rotation > 3) {
+            let rotation = 0;
+        }
+        
+        let count = count + 1; // Update operation counter
+        do draw();
+        return;
+    }
+
+    /** * Rendering method: Responsible for the visual display on the screen.
+     * Drawing is dynamic based on position (x,y), scale (size), and orientation (rotation).
+     */
+    method void draw() {
+        do Screen.setColor(true); // Set drawing color to black
+        
+        // 1. Draw Rocket Body: A rectangle whose dimensions swap based on orientation (Vertical/Horizontal)
+        if ((rotation = 0) | (rotation = 2)) {
+            // States 0 and 2 are vertical (Up and Down)
+            do Screen.drawRectangle(x, y, x + size, y + (size + 10));
+        } else {
+            // States 1 and 3 are horizontal (Right and Left)
+            do Screen.drawRectangle(x, y, x + (size + 10), y + size);
+        }
+
+        // 2. Draw Rocket Head: A triangle composed of two lines meeting at a vertex
+        if (rotation = 0) { // Facing Up
+            do Screen.drawLine(x, y, x + (size / 2), y - size);
+            do Screen.drawLine(x + (size / 2), y - size, x + size, y);
+        }
+        if (rotation = 1) { // Facing Right
+            do Screen.drawLine(x + size + 10, y, x + (size * 2), y + (size / 2));
+            do Screen.drawLine(x + (size * 2), y + (size / 2), x + size + 10, y + size);
+        }
+        if (rotation = 2) { // Facing Down
+            do Screen.drawLine(x, y + size + 10, x + (size / 2), y + (size * 2));
+            do Screen.drawLine(x + (size / 2), y + (size * 2), x + size, y + size + 10);
+        }
+        if (rotation = 3) { // Facing Left
+            do Screen.drawLine(x, y, x - size, y + (size / 2));
+            do Screen.drawLine(x - size, y + (size / 2), x, y + size);
+        }
+
+        // 3. Draw Rocket Legs (Fins): Diagonal lines that add unique shape detail
+        if (rotation = 0) { // Legs at the bottom
+            do Screen.drawLine(x, y + size + 10, x - (size / 4), y + (size * 2));
+            do Screen.drawLine(x + size, y + size + 10, x + size + (size / 4), y + (size * 2));
+        }
+        if (rotation = 1) { // Legs on the left side
+            do Screen.drawLine(x, y, x - (size / 2), y - (size / 4));
+            do Screen.drawLine(x, y + size, x - (size / 2), y + size + (size / 4));
+        }
+        if (rotation = 2) { // Legs at the top
+            do Screen.drawLine(x, y, x - (size / 4), y - (size / 2));
+            do Screen.drawLine(x + size, y, x + size + (size / 4), y - (size / 2));
+        }
+        if (rotation = 3) { // Legs on the right side
+            do Screen.drawLine(x + size + 10, y, x + (size * 2), y - (size / 4));
+            do Screen.drawLine(x + size + 10, y + size, x + (size * 2), y + size + (size / 4));
+        }
+
+        return;
+    }
+
+    /** * Erases the rocket from the screen by painting its area white (false).
+     * Uses a wide rectangular area to cover all parts in any possible rotation.
+     */
+    method void erase() {
+        do Screen.setColor(false); // Set drawing color to white (background color)
+        do Screen.drawRectangle(x - size, y - size, x + (size * 2), y + (size * 2));
+        return;
+    }
+
+    /** * Translation Transformation: Move Up.
+     * Includes boundary checks to prevent moving off-screen.
+     */
+    method void moveUp() {
+        if (y > 30) {
+            do erase();
+            let y = y - 5;
+            let count = count + 1;
+            do draw();
+        }
+        return;
+    }
+
+    /** Move Down with boundary check */
+    method void moveDown() {
+        if (y < 220) {
+            do erase();
+            let y = y + 5;
+            let count = count + 1;
+            do draw();
+        }
+        return;
+    }
+
+    /** Move Left with boundary check */
+    method void moveLeft() {
+        if (x > 30) {
+            do erase();
+            let x = x - 5;
+            let count = count + 1;
+            do draw();
+        }
+        return;
+    }
+
+    /** Move Right with boundary check */
+    method void moveRight() {
+        if (x < 480) {
+            do erase();
+            let x = x + 5;
+            let count = count + 1;
+            do draw();
+        }
+        return;
+    }
+
+    /** * Scaling Up Transformation:
+     * Increases the size variable which affects all drawing calculations.
+     */
+    method void incSize() {
+if ((x > (size + 5)) & (x + (size * 2) < 505) & 
+        (y > (size + 5)) & (y + (size * 2) < 250)) {
+        do erase();
+        let size = size + 2;
+        let count = count + 1;
+        do draw();
+}
+        return;
+    }
+
+    /** * Scaling Down Transformation:
+     * Decreases size with a minimum limit to maintain visibility.
+     */
+    method void decSize() {
+        if (size > 10) {
+            do erase();
+            let size = size - 2;
+            let count = count + 1;
+            do draw();
+        }
+        return;
+    }
+
+    /** * Returns the total number of transformations performed on the object.
+     */
+    method int getCount() {
+        return count;
+    }
+}

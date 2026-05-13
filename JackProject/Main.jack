@@ -1,0 +1,73 @@
+/**
+  Main: The entry point of the application.
+   Manages the user interface for selecting which game to play  and handles the high-level execution flow.
+ **/
+class Main {
+    function void main() {
+        // Variable declarations
+        var char key;         // Stores the ASCII value of the key pressed
+        var TilGame tGame;    // Object reference for Tal's TilGame
+        var ArticGame aGame;      // Object reference for Avital's AGame
+        
+        // --- STEP 1: INITIAL UI MENU ---
+        // moveCursor(row, col): Positions the cursor on the 23x64 character grid.
+        do Output.moveCursor(10, 15);
+        do Output.printString("Press 'T' for Til Game");
+        do Output.moveCursor(12, 15);
+        do Output.printString("Press 'A' for Artic Game");
+
+        // --- STEP 2: INPUT LISTENER LOOP ---
+        // Wait until 'T' (ASCII 84) or 'A' (ASCII 65) is pressed.
+        // The tilde (~) means 'NOT'. The loop runs while NO valid key is pressed.
+        while (~(key = 84) & ~(key = 65)) {
+            let key = Keyboard.keyPressed();
+        }
+
+        // Once a key is pressed, clear the menu to start the game.
+        do Screen.clearScreen();
+
+        // --- STEP 3: BRANCHING LOGIC ---
+        
+        // OPTION 1:  TilGame selected
+        if (key = 84) {
+ // Instantiate the game engine and enter the main game loop
+            let tGame = TilGame.new();
+            do tGame.run();     
+            
+            // Post-game cleanup and result display
+            do Screen.clearScreen();
+            do Output.moveCursor(10, 20);
+            do Output.printString("T Game Over!");
+           
+            // Final Action Tracking: Retrieve count from the game object
+            do Output.moveCursor(12, 15);
+            do Output.printString("Total Actions: ");
+            do Output.printInt(tGame.getFinalCount()); 
+            
+            // Memory Management: Explicitly free heap memory
+            do tGame.dispose();
+        }
+
+        // OPTION 2: A AGame selected
+        if (key = 65) {
+ // Instantiate the game engine and enter the main game loop
+            let aGame = ArticGame.new();   
+            do aGame.run();         
+            
+            // Post-game cleanup and result display
+            do Screen.clearScreen();
+            do Output.moveCursor(10, 20);
+            do Output.printString("Artic Game Over!");
+            
+            // Tracking Actions for Avital's game
+            do Output.moveCursor(12, 15);
+            do Output.printString("Total Actions: ");
+            do Output.printInt(aGame.getFinalCount());
+            
+            // Memory Management
+            do aGame.dispose();
+        }
+
+        return;
+    }
+}

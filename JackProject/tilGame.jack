@@ -1,0 +1,63 @@
+/**
+ * TilGame: Manages the game logic using a "one step per press" configuration.
+ *( This ensures that a single key press results in exactly one action.)
+ */
+class TilGame {
+    field Til til; 
+
+    /** Constructs a new game and initializes the rocket at a starting position. */
+    constructor TilGame new() {
+        let til = Til.new(240, 120);
+        return this;
+    }
+
+    /** Deallocates the game object and its internal rocket instance. */
+    method void dispose() {
+        do til.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** * Main game loop. 
+     * Uses a specific polling logic to prevent continuous movement 
+     * when a key is held down. 
+     */
+    method void run() {
+        var char key;
+        var boolean exit;
+        let exit = false;
+        
+        while (~exit) {
+            // 1. Wait for a key to be pressed
+            while (key = 0) {
+                let key = Keyboard.keyPressed();
+            }
+
+            // 2. Execute the action - Triggered only once per press!
+            if (key = 81)  { let exit = true; }      // 'q' key - Quit
+            if (key = 90)  { do til.decSize(); }     // 'z' key - Decrease size
+            if (key = 88)  { do til.incSize(); }     // 'x' key - Increase size
+            
+            // --- Rotation requirement ---
+            if (key = 82) { do til.rotate(); }       // 'r' key - Rotate 90 degrees
+            
+            // Single-step movement:
+            if (key = 131) { do til.moveUp(); }      // Up arrow
+            if (key = 133) { do til.moveDown(); }    // Down arrow
+            if (key = 130) { do til.moveLeft(); }    // Left arrow
+            if (key = 132) { do til.moveRight(); }   // Right arrow
+
+            // 3. Wait for the key to be released - Empty loop!
+            // This prevents the action from repeating while the key is held.
+            while (~(key = 0)) {
+                let key = Keyboard.keyPressed();
+            }
+        }
+        return;
+    }
+
+    /** Returns the final operation count from the rocket object. */
+    method int getFinalCount() {
+        return til.getCount();
+    }
+}
