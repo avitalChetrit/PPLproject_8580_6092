@@ -287,23 +287,6 @@
                      ;;GOTO RET
                       "@R15" "A=M" "0;JMP"]))
 
-(defn handleReverse3 [writer]
-  (write-asm writer
-             ["// reverse3 (a, b, c -> c, b, a)"
-              "@SP" "A=M-1" "D=M"    ;; D = c (העליון)
-              "@R13" "M=D"           ;; שומרים את c ב-R13
-
-              "@SP" "D=M" "@3" "A=D-A" "D=M" ;; D = a (התחתון מבין השלושה)
-              "@R14" "M=D"                   ;; שומרים את a ב-R14
-
-              ;; מתחילים בהחלפות:
-              "@R13" "D=M"
-              "@SP" "D=M" "@3" "A=D-A" "M=D" ;; מציבים את c במיקום של a
-
-              "@R14" "D=M"
-              "@SP" "A=M-1" "M=D"            ;; מציבים את a במיקום של c
-              ;; האיבר האמצעי (b) נשאר במקומו ולכן אין צורך לגעת בו
-              ]))
 ;; --------------------------------------------------
 ;; Processing input lines
 ;; --------------------------------------------------
@@ -344,8 +327,6 @@
           "function" (handleFunction writer (nth words 1) (nth words 2))
           "call" (handleCall writer (nth words 1) (nth words 2))
           "return" (handleReturn writer)
-
-          "reverse3" (handleReverse3 writer)
           nil)))))
 
 ;; --- Process single VM file ---
