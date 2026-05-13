@@ -80,7 +80,7 @@
           (doseq [f files]
             (let [file-content (slurp f)
                   tokens (tokenize file-content)
-                  output-path (str (str/replace (.getAbsolutePath f) #"\.jack$" "") "T.xml")]
+                  output-path (str (str/replace (.getAbsolutePath f) #"\.jack$" "") "MYT.xml")]
               (with-open [writer (io/writer output-path)]
                 (write-token-xml tokens writer))
               (println "Created Token XML:" (.getName (io/file output-path)))))))
