@@ -411,6 +411,24 @@ NestedCall:
 ---
 *פותח כחלק מהשלמת פרויקט תוכנה בקורס Nand2Tetris.*
 
+### מסך פתיחה לבחירת משחק
+<img width="636" height="318" alt="image" src="https://github.com/user-attachments/assets/6be3c1c9-4e91-4e59-8e20-3c2d35c9b240" />
+
+---
+
+### משחק הארטיק
+<img width="269" height="206" alt="image" src="https://github.com/user-attachments/assets/948c9578-2800-4c30-ac08-ff330a5e4a9c" />
+
+---
+
+### משחק הטיל
+<img width="366" height="247" alt="image" src="https://github.com/user-attachments/assets/fad3e685-f0f8-434e-931a-55196a19a4c6" />
+
+---
+
+### מסך סיכום סך הפעולות
+<img width="413" height="227" alt="image" src="https://github.com/user-attachments/assets/4158a979-ac84-4a55-bdfd-7b58b4a1e7f5" />
+
 
 
 </div>
