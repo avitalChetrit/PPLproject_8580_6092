@@ -1,40 +1,62 @@
+;;By: Tal Shezifi 213878580, Avital Hazan 214086092
+;;Practice group number 150060.21.5786.42
+;; Define the namespace of the file.
 (ns tar0.lexical
+  ;; Imports Java I/O utilities for file handling
   (:require [clojure.java.io :as io]
+    ;; Imports string manipulation functions
             [clojure.string :as str])
+  ;; Allows running as standalone application
   (:gen-class))
+
+;; Forward declaration of the function so it can be referenced before its physical definition.
 (declare classify-token)
-;; --- הגדרות שפת Jack ---
+
+;; --- Jack language settings ---
+
+;; Define a set of all reserved keywords in the Jack language
 (def keywords #{"class" "constructor" "function" "method" "field" "static" "var"
                 "int" "char" "boolean" "void" "true" "false" "null" "this"
                 "let" "do" "if" "else" "while" "return"})
 
+;; Define a set of all allowed symbols in the Jack language
 (def symbols #{\{ \} \( \) \[ \] \. \, \; \+ \- \* \/ \& \| \< \> \= \~})
 
-;; --- טיפול בתווים מיוחדים עבור XML ---
+;; --- Handling special characters for XML ---
+;; Helper function to convert problematic characters to valid XML format
 (defn escape-xml [s]
   (-> s
-      (str/replace "&" "&amp;")
+      (str/replace "&" "&amp;");; for example replace & with its XML entity.
       (str/replace "<" "&lt;")
       (str/replace ">" "&gt;")
       (str/replace "\"" "&quot;")))
 
-;; --- פירוק לטוקנים (Tokenizing) ---
+;; --- Tokenizing ---
+;; Function responsible for breaking raw text into a list of tokens (individual words)
 (defn tokenize [input]
   (let [
+        ;; Step A: Remove block comments (/*...*/) and line comments (//...)
         clean-code (-> input
                        (str/replace #"(?s)/\*.*?\*/" " ")
                        (str/replace #"//.*" " "))
-        ;; ה-Regex הזה מפריד מחרוזות, אז מילים/מספרים, ואז סימנים
-        token-pattern #"\"[^\"]*\"|[a-zA-Z_][a-zA-Z0-9_]*|[0-9]+|[\{\}\(\)\[\]\.\,\;\+\-\*\/\&\|\<\>\=\~]"]
+        ;; Step B: Define a Regular Expression (Regex) to find strings, identifiers, numbers, or symbols
+                token-pattern #"\"[^\"]*\"|[a-zA-Z_][a-zA-Z0-9_]*|[0-9]+|[\{\}\(\)\[\]\.\,\;\+\-\*\/\&\|\<\>\=\~]"]
+    ;; Scan the clean code and return a list of everything that matches the Regex pattern
 (re-seq token-pattern clean-code)))
 
+;; Function that takes a list of tokens and writes them to an XML file
 (defn write-token-xml [tokens writer]
+  ;; Write the XML opening tag
   (.write writer "<tokens>\n")
+  ;; Loop through each token in the list
   (doseq [t tokens]
+    ;; Split token into type (tag) and content (value)
     (let [[tag value] (classify-token t)
-          ;; וודא שכל ערך עובר escape_xml כדי לא לשבור את ה-XML
+          ;; Escape content for safe XML formatting
           final-value (escape-xml value)]
+      ;; Write the line in format: <type> value </type>
       (.write writer (str "<" (name tag) "> " final-value " </" (name tag) ">\n"))))
+  ;; Write the XML closing tag
   (.write writer "</tokens>\n"))
 
 ;; --- זיהוי וסיווג טוקנים ---
