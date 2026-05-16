@@ -59,52 +59,57 @@
   ;; Write the XML closing tag
   (.write writer "</tokens>\n"))
 
-;; --- זיהוי וסיווג טוקנים ---
+;; Function that categorizes each token into its type (keyword, integer, string, etc.)
 (defn classify-token [t]
   (cond
-    ;; Keyword
+    ;; Check if the token exists in the keywords set
     (keywords t) [:keyword t]
 
-    ;; Integer Constant
+    ;; Check if the token is a sequence of digits (number)
     (re-matches #"[0-9]+" t)
     (let [n (Integer/parseInt t)]
-      (if (<= 0 n 32767)
+      (if (<= 0 n 32767)   ;; Verify the number is within the allowed range per project requirements
         [:integerConstant t]
-        [:identifier t])) ;; אם חרג מהטווח, Jack מתייחסת לזה לעיתים כמזהה או שגיאה
-    ;; String Constant (הסרת המירכאות)
+        [:identifier t]))  ;; If out of range, treat it as an identifier (as per Jack specs)
+    ;; Check if the token starts with quotes (string)
     (str/starts-with? t "\"")
-    [:stringConstant (subs t 1 (dec (count t)))]
+    [:stringConstant (subs t 1 (dec (count t)))]  ;; Return the string without the actual quotes
 
-    ;; Symbol
+    ;; Check if the token is a single character that exists in the symbols set
     (and (= 1 (count t)) (symbols (first t)))
-    [:symbol t] ;; כאן לא עושים escape-xml, הוא יבוצע בשלב הכתיבה
-    ;; Identifier
+    [:symbol t]
+    ;; In any other case, the token is considered an identifier (variable name, function name, etc.)
     :else
     [:identifier t]))
 
-;; --- פונקציה ראשית ---
+;; Main function that runs when the program is executed
 (defn -main [& args]
-  ;; אם הנתיב הועבר כארגומנט ב-lein run, נשתמש בו.
-  ;; אם לא, נבקש מהמשתמש להקיש אותו.
+  ;; Get the path from arguments or directly from the user
   (let [raw-path (or (first args)
                      (do (println "Please enter the directory path:")
                          (read-line)))
-        ;; שימוש ב-trim הוא קריטי כדי להוריד אנטרים או רווחים מיותרים
+        ;; Trim unnecessary whitespace from the path
         path (str/trim (str raw-path))
         dir (io/file path)]
-
+    ;; Check if the path exists on the computer
     (if (.exists dir)
+      ;; If it's a directory, take all .jack files. If it's a file, take only that file.
       (let [files (if (.isDirectory dir)
                     (filter #(str/ends-with? (.getName %) ".jack") (.listFiles dir))
                     [dir])]
+        ;; If no matching files were found
         (if (empty? files)
           (println "No .jack files found in the directory.")
+          ;; Loop through every found .jack file
           (doseq [f files]
-            (let [file-content (slurp f)
-                  tokens (tokenize file-content)
+            (let [file-content (slurp f) ;; Read file content
+                  tokens (tokenize file-content) ;; Tokenize the content
+                  ;; Create output filename: replace .jack extension with MYT.xml
                   output-path (str (str/replace (.getAbsolutePath f) #"\.jack$" "") "MYT.xml")]
+              ;; Open file for writing and perform output
               (with-open [writer (io/writer output-path)]
                 (write-token-xml tokens writer))
+              ;; Print success message to the user
               (println "Created Token XML:" (.getName (io/file output-path)))))))
-      ;; הדפסה שתעזור לך לראות אם הנתיב הגיע משובש
+      ;; Error message if the path was not found
       (println "Error: Directory not found. Checked path: [" path "]"))))
