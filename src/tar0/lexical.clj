@@ -11,8 +11,7 @@
 
 ;; Forward declaration of the function so it can be referenced before its physical definition.
 (declare classify-token)
-
-;; --- הצהרות מראש על פונקציות ה-Parser החדשות כדי שיוכלו לקרוא אחת לשנייה ברקורסיה ---
+;; --- Pre-declarations of the new Parser functions so they can call each other recursively ---
 (declare compile-class compile-class-var-dec compile-subroutine
          compile-parameter-list compile-subroutine-body compile-var-dec
          compile-statements compile-let compile-if compile-while compile-do
@@ -409,8 +408,7 @@
           (doseq [f files]
             (let [file-content (slurp f) ;; Read file content
                   tokens (tokenize file-content) ;; Tokenize the content
-
-                  ;; הפלט הנוכחי מיוצר ישירות במבנה ההיררכי של הפרויקט עם סיומת PH.xml
+                  ;; The current output is produced directly in the hierarchical structure of the project with the extension PH.xml
                   output-path (str (str/replace (.getAbsolutePath f) #"\.jack$" "") "PH.xml")]
 
               ;; Open file for writing and perform output
