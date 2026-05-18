@@ -27,7 +27,7 @@
 ;; Define a set of all allowed symbols in the Jack language
 (def symbols #{\{ \} \( \) \[ \] \. \, \; \+ \- \* \/ \& \| \< \> \= \~})
 
-;; סט אופרטורים ייעודי עבור ה-Parser לצורך זיהוי ביטויים (Expressions)
+;; A dedicated set of operators for the Parser to recognize expressions
 (def op-symbols #{\+ \- \* \/ \& \| \< \> \=})
 
 ;; --- Handling special characters for XML ---
@@ -413,7 +413,7 @@
 
               ;; Open file for writing and perform output
               (with-open [writer (io/writer output-path)]
-                ;; יצירת הקונטקסט והפעלת ה-Parser מהשורש (compile-class)
+                ;; A dedicated set of operators for the Parser to recognize expressions
                 (let [ctx (create-context tokens writer)]
                   (compile-class ctx)))
 
