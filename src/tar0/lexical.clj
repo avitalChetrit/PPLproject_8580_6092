@@ -171,7 +171,8 @@
       (write-terminal! ctx) ;; varName
       (while (= "," (peek-token ctx))
         (write-terminal! ctx) ;; ','
-        (write-terminal! ctx))) ;; type, varName
+        (write-terminal! ctx) ;; type
+        (write-terminal! ctx))) ;; varName
     (.write writer "</parameterList>\n")))
 
 (defn compile-subroutine-body [ctx]
@@ -286,7 +287,9 @@
   (let [writer (:writer @ctx)]
     (.write writer "<expression>\n")
     (compile-term ctx)
-    (while (and (peek-token ctx) (op-symbols (first (peek-token ctx))))
+    (while (and (peek-token ctx)
+                (= 1 (count (peek-token ctx)))
+                (op-symbols (first (peek-token ctx))))
       (write-terminal! ctx) ;; op
       (compile-term ctx))   ;; term
     (.write writer "</expression>\n")))
@@ -310,38 +313,38 @@
         (write-terminal! ctx)) ;; ')'
 
       :else
-      (let [t (next-token! ctx)
-            [tag _] (classify-token t)
-            lookahead (peek-token ctx)]
+      (let [t (peek-token ctx) ;; משתמשים ב-peek כדי לא לשלוף את הטוקן מהתור מוקדם מדי
+            [tag value] (classify-token t)
+            lookahead (let [remain (:tokens @ctx)]
+                        (if (> (count remain) 1) (second remain) nil))] ;; מציצים לטוקן השני מבלי לגעת בתור
         (cond
           ;; גישה למערך בעזרת סוגריים מרובעים
           (= "[" lookahead)
-          (let [temp-writer (:writer @ctx)]
-            (.write temp-writer (str "<" (name tag) "> " (escape-xml t) " </" (name tag) ">\n"))
-            (write-terminal! ctx) ;; '['
+          (do
+            (write-terminal! ctx) ;; כותב את המזהה של המערך
+            (write-terminal! ctx) ;; כותב את ה-'['
             (compile-expression ctx)
-            (write-terminal! ctx)) ;; ']'
+            (write-terminal! ctx)) ;; כותב את ה-']'
 
-          ;; קריאה למתודה / פונקציה
+          ;; קריאה למתודה / פונקציה (למשל Screen.setColor או draw)
           (#{"(" "."} lookahead)
-          (let [temp-writer (:writer @ctx)]
-            (.write temp-writer (str "<" (name tag) "> " (escape-xml t) " </" (name tag) ">\n"))
+          (do
+            (write-terminal! ctx) ;; כותב את המזהה הראשון (subroutineName / className / varName)
             (if (= "(" lookahead)
               (do
-                (write-terminal! ctx) ;; '('
+                (write-terminal! ctx) ;; כותב את ה-'('
                 (compile-expression-list ctx)
-                (write-terminal! ctx)) ;; ')'
+                (write-terminal! ctx)) ;; כותב את ה-')'
               (do
-                (write-terminal! ctx) ;; '.'
-                (write-terminal! ctx) ;; subroutineName
-                (write-terminal! ctx) ;; '('
+                (write-terminal! ctx) ;; כותב את ה-'.'
+                (write-terminal! ctx) ;; כותב את ה-subroutineName
+                (write-terminal! ctx) ;; כותב את ה-'('
                 (compile-expression-list ctx)
-                (write-terminal! ctx)))) ;; ')'
+                (write-terminal! ctx)))) ;; כותב את ה-')'
 
-          ;; טוקן בודד פשוט (מספר, מחרוזת, מזהה או קבוע)
+          ;; טוקן בודד פשוט (מספר, מחרוזת נקייה, מזהה או קבוע)
           :else
-          (let [temp-writer (:writer @ctx)]
-            (.write temp-writer (str "<" (name tag) "> " (escape-xml t) " </" (name tag) ">\n"))))))
+          (write-terminal! ctx)))) ;; פשוט כותב את הטוקן ומתקדם בצורה בטוחה
     (.write writer "</term>\n")))
 
 (defn compile-expression-list [ctx]
@@ -380,7 +383,7 @@
                   tokens (tokenize file-content) ;; Tokenize the content
 
                   ;; --- עדכון קל לשם קובץ הפלט לחלק ב' ---
-                  ;; חלק א' ייצר קובץ בשם MYT.xml. חלק ב' (הנוכחי) אמור לייצר ישירות קובץ במבנה ההיררכי של הפרויקט עם סיומת .xml נקייה
+                  ;; חלק א' ייצר קובץ בשם MYT.xml. חלק ב' (הנוכחי) אמור לייצר ישירות קובץ במבנה ההיררכי של הפרויקט עם סיומת PH.xml
                   output-path (str (str/replace (.getAbsolutePath f) #"\.jack$" "") "PH.xml")]
 
               ;; Open file for writing and perform output
