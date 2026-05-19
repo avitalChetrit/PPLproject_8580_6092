@@ -97,7 +97,7 @@
 ;; Function that initializes the parser's state.
 (defn create-context [tokens writer]
   (atom {:tokens tokens :writer writer :indent 0}))
-
+;;token the list of the tokens,writer-to the XML indent- the amount of the indent
 ;; Function that peeks at the first token currently at the head of the token list, without removing it or advancing the list.
 (defn peek-token [ctx]
   (first (:tokens @ctx)))
@@ -221,7 +221,8 @@
     (write-terminal! ctx)) ;; Writes the next variable's name identifier
   (write-terminal! ctx) ;; ';'
   (close-tag! ctx "varDec"));; Closes the tag: </varDec>
-
+;;# for set..
+;;= for next something
 ;; Function that parses a sequence of zero or more executable statements.
 (defn compile-statements [ctx]
   (open-tag! ctx "statements") ;; Opens the tag: <statements>
