@@ -1,41 +1,70 @@
 ;;By: Tal Shezifi 213878580, Avital Hazan 214086092
 ;;Practice group number 150060.21.5786.42
 (ns tar0.stage5
+  ;; Imports Java I/O utilities for file handling
   (:require [clojure.java.io :as io]
+    ;; Imports string manipulation functions
             [clojure.string :as str])
+  ;; Allows running as standalone application
   (:gen-class))
 
+;; Forward declaration of the function so it can be referenced before its physical definition.
 (declare classify-token)
-;; --- קדם-הצהרות על פונקציות מחולל הקוד (VM Code Generator) ---
+;; --- Pre-declarations of the new Parser functions so they can call each other recursively ---
 (declare compile-class compile-class-var-dec compile-subroutine
          compile-parameter-list compile-subroutine-body compile-var-dec
          compile-statements compile-let compile-if compile-while compile-do
          compile-return compile-expression compile-term compile-expression-list)
 
-;; --- הגדרות שפת Jack ---
+;; --- Jack language settings ---
+
+;; Define a set of all reserved keywords in the Jack language
 (def keywords #{"class" "constructor" "function" "method" "field" "static" "var"
                 "int" "char" "boolean" "void" "true" "false" "null" "this"
                 "let" "do" "if" "else" "while" "return"})
 
+;; Define a set of all allowed symbols in the Jack language
 (def symbols #{\{ \} \( \) \[ \] \. \, \; \+ \- \* \/ \& \| \< \> \= \~})
+
+;; A dedicated set of operators for the Parser to recognize expressions
 (def op-symbols #{\+ \- \* \/ \& \| \< \> \=})
 
-;; --- ניתוח טוקנים (Tokenizing) ---
+
+;; --- Tokenizing ---
+;; Function responsible for breaking raw text into a list of tokens (individual words)
 (defn tokenize [input]
-  (let [clean-code (-> input
+  (let [
+        ;; Step A: Remove block comments (/*...*/) and line comments (//...)
+        clean-code (-> input
                        (str/replace #"(?s)/\*.*?\*/" " ")
                        (str/replace #"//.*" " "))
+        ;; Step B: Define a Regular Expression (Regex) to find strings, identifiers, numbers, or symbols
         token-pattern #"\"[^\"]*\"|[a-zA-Z_][a-zA-Z0-9_]*|[0-9]+|[\{\}\(\)\[\]\.\,\;\+\-\*\/\&\|\<\>\=\~]"]
+    ;; Scan the clean code and return a list of everything that matches the Regex pattern
     (re-seq token-pattern clean-code)))
 
+;; Function that categorizes each token into its type (keyword, integer, string, etc.)
 (defn classify-token [t]
   (cond
+    ;; Check if the token exists in the keywords set
     (keywords t) [:keyword t]
-    (re-matches #"[0-9]+" t) [:integerConstant t]
-    (str/starts-with? t "\"") [:stringConstant (subs t 1 (dec (count t)))]
-    (and (= 1 (count t)) (symbols (first t))) [:symbol t]
-    :else [:identifier t]))
 
+    ;; Check if the token is a sequence of digits (number)
+    (re-matches #"[0-9]+" t)
+    (let [n (Integer/parseInt t)]
+      (if (<= 0 n 32767)   ;; Verify the number is within the allowed range per project requirements
+        [:integerConstant t]
+        [:identifier t]))  ;; If out of range, treat it as an identifier (as per Jack specs)
+    ;; Check if the token starts with quotes (string)
+    (str/starts-with? t "\"")
+    [:stringConstant (subs t 1 (dec (count t)))]  ;; Return the string without the actual quotes
+
+    ;; Check if the token is a single character that exists in the symbols set
+    (and (= 1 (count t)) (symbols (first t)))
+    [:symbol t]
+    ;; In any other case, the token is considered an identifier (variable name, function name, etc.)
+    :else
+    [:identifier t]))
 ;; =================================================================================
 ;; --- תשתית ניהול המצב: טבלת סמלים ומחולל קוד VM (Symbol Table & VM Writer) ---
 ;; =================================================================================
@@ -345,8 +374,10 @@
 
 (defn compile-term [ctx]
   (let [next-t (peek-token ctx)
+        ;; classify-token מחזירה זוג: [סוג_הטוקן, הערך_הנקי_שלו]
         [token-tag token-val] (classify-token next-t)]
     (cond
+      ;; 1. טיפול באופרטורים אונאריים (שלילה או מינוס)
       (#{"-" "~"} next-t)
       (do
         (next-token! ctx)
@@ -355,51 +386,60 @@
           (write-arithmetic! ctx "neg")
           (write-arithmetic! ctx "not")))
 
+      ;; 2. טיפול בביטוי העטוף בסוגריים ( Expression )
       (= "(" next-t)
       (do
         (next-token! ctx) ;; בולע את '('
         (compile-expression ctx)
-        (next-token! ctx)) ;; **תיקון: בולע כעת בצורה מוחלטת את ')'**
+        (next-token! ctx)) ;; בולע את ')'
 
+      ;; 3. קבוע מספרי (Integer)
       (= token-tag :integerConstant)
-      (write-push! ctx "constant" (next-token! ctx))
+      (do
+        (next-token! ctx) ;; בולע את הטוקן מהזרם
+        (write-push! ctx "constant" token-val)) ;; משתמש בערך המספרי התקין
 
+      ;; 4. קבוע מחרוזת (String)
       (= token-tag :stringConstant)
-      (let [s (next-token! ctx)
-            clean-str (subs s 1 (dec (count s)))
-            len (count clean-str)]
+      (let [_ (next-token! ctx) ;; בולע את הטוקן הגולמי מהזרם
+            len (count token-val)] ;; token-val הוא כבר המחרוזת הנקייה ללא גרשיים!
         (write-push! ctx "constant" len)
         (write-vm! ctx "call String.new 1")
-        (doseq [ch clean-str]
+        (doseq [ch token-val]
           (write-push! ctx "constant" (int ch))
           (write-vm! ctx "call String.appendChar 2")))
 
+      ;; 5. קבועים מובנים בשפה (false, null)
       (#{"false" "null"} next-t)
       (do (next-token! ctx) (write-push! ctx "constant" 0))
 
+      ;; 6. הקבוע המובנה true
       (= "true" next-t)
       (do (next-token! ctx) (write-push! ctx "constant" 0) (write-arithmetic! ctx "not"))
 
+      ;; 7. המילה השמורה this
       (= "this" next-t)
       (do (next-token! ctx) (write-push! ctx "pointer" 0))
 
+      ;; 8. טיפול במזהים: משתנים, מערכים וקריאות לפונקציות
       :else
       (let [first-id (next-token! ctx)
-            lookahead (peek-token ctx)] ;; **תיקון: מציץ על הטוקן הבא אחרי שבלענו את ה-id**
+            lookahead (peek-token ctx)]
         (cond
+          ;; א. גישה לאיבר במערך: arr[expression]
           (= "[" lookahead)
           (let [sym (lookup-symbol ctx first-id)]
             (write-push! ctx (:kind sym) (:index sym))
-            (next-token! ctx) ;; '['
+            (next-token! ctx) ;; בולע את '['
             (compile-expression ctx)
-            (next-token! ctx) ;; ']'
+            (next-token! ctx) ;; בולע את ']'
             (write-arithmetic! ctx "add")
             (write-pop! ctx "pointer" 1)
             (write-push! ctx "that" 0))
 
+          ;; ב. קריאה לפונקציה/מתודה מובלעת בתוך ביטוי
           (#{"(" "."} lookahead)
           (do
-            ;; **תיקון זרם הבליעה לקריאות מובלעות בתוך ביטויים**
             (next-token! ctx) ;; בולע את ה-'.' או את ה-'('
             (if (= "(" lookahead)
               (do
@@ -408,7 +448,7 @@
                   (next-token! ctx) ;; בולע ')'
                   (write-vm! ctx (str "call " (:class-name @ctx) "." first-id " " (inc n-args)))))
               (let [subroutine-name (next-token! ctx)]
-                (next-token! ctx) ;; בולע את ה-'(' שמופיע אחרי השם
+                (next-token! ctx) ;; בולע את ה-'(' שאחרי שם הפונקציה
                 (let [sym (lookup-symbol ctx first-id)]
                   (if sym
                     (do
@@ -420,10 +460,10 @@
                       (next-token! ctx) ;; בולע ')'
                       (write-vm! ctx (str "call " first-id "." subroutine-name " " n-args))))))))
 
+          ;; ג. משתנה רגיל (מקומי, ארגומנט או שדה)
           :else
           (let [sym (lookup-symbol ctx first-id)]
             (write-push! ctx (:kind sym) (:index sym))))))))
-
 (defn compile-expression-list [ctx]
   (let [arg-count (atom 0)]
     (when-not (= ")" (peek-token ctx))
