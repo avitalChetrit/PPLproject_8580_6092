@@ -41,54 +41,80 @@
 ;; =================================================================================
 
 (defn create-context [tokens writer]
-  (atom {:tokens tokens
-         :writer writer
-         :class-name nil
-         :class-table {}
-         :subroutine-table {}
+  (atom {:tokens tokens ;; List of tokens remaining for analysis.
+         :writer writer ;; The Writer object is open for writing to the VM file
+         :class-name nil;; will keep the current class name
+         ;; --- Symbol Tables ---
+         :class-table {} ;; Class-level table
+         :subroutine-table {};; Function/Method Level Table
+         ;; Running counters for assigning unique indexes (starting from 0)
          :indices {"static" 0 "field" 0 "argument" 0 "local" 0}
+         ;; Internal counters to produce unique labels (if and while)
          :label-counts {"if" 0 "while" 0}}))
 
+;; Peeks at the first token at the top of the list without removing it (Lookahead)
 (defn peek-token [ctx]
   (first (:tokens @ctx)))
 
 (defn next-token! [ctx]
-  (let [t (peek-token ctx)]
-    (swap! ctx update :tokens rest)
+  (let [t (peek-token ctx)];; Saves the current token at the top of the list
+    (swap! ctx update :tokens rest);; Updates the context and advances the flow by removing the first token (rest)
     t))
 
+;;Reset the function table
 (defn reset-subroutine-table! [ctx]
-  (swap! ctx assoc :subroutine-table {})
-  (swap! ctx update :indices assoc "argument" 0 "local" 0))
+  (swap! ctx assoc :subroutine-table {});; At the beginning of each subroutine, the function scope (Method Scope) must be cleared.
+  (swap! ctx update :indices assoc "argument" 0 "local" 0));; Reset counters of arguments and local variables back to 0 (for the new function)
 
+;;Adding a variable to a table
 (defn add-symbol! [ctx name type kind]
+  ;; 1. Retrieve the current free index for the variable type (kind)
   (let [current-idx (get-in @ctx [:indices kind])
+        ;; 2. Construct the variable record as required: Kind, Type, and Index
         entry {:type type :kind kind :index current-idx}
+        ;; 3. Determine the save destination: static/field goes to the class, argument/local to the function
         table-key (if (#{"static" "field"} kind) :class-table :subroutine-table)]
+    ;; 4. Insert the new variable into the appropriate table under its name
     (swap! ctx assoc-in [table-key name] entry)
+    ;; 5. Advance the running counter of the same Kind by 1 for the next variable to come
     (swap! ctx update-in [:indices kind] inc)))
 
+;;Variable search in tables
 (defn lookup-symbol [ctx name]
+  ;; Scoping rule: First search the function's local table.
+  ;; If the variable does not exist there (returns nil), the 'or' function will continue searching the global class table.
   (or (get-in @ctx [:subroutine-table name])
       (get-in @ctx [:class-table name])))
 
+;;Unique Label Generator
 (defn gen-label! [ctx type-prefix]
+  ;; Retrieve the current counter of the requested label type (if or while)
   (let [current-count (get-in @ctx [:label-counts type-prefix])]
+    ;; Advance the internal counter in the context by 1.
     (swap! ctx update-in [:label-counts type-prefix] inc)
+    ;; Returns the label string in standard format in uppercase (e.g.: IF_0, WHILE_3)
     (str (str/upper-case type-prefix) "_" current-count)))
 
+;;Direct writing to the VM file.
 (defn write-vm! [ctx line]
+  ;;Writing the VM command with a line feed
   (.write (:writer @ctx) (str line "\n")))
 
+;;Push and pull commands
 (defn write-push! [ctx segment index]
+  ;; Field mapping rule: A field variable in Jack is translated to a "this" segment in VM
   (let [seg (if (= segment "field") "this" segment)]
+    ;; Generate a formal push command in VM
     (write-vm! ctx (str "push " seg " " index))))
 
 (defn write-pop! [ctx segment index]
   (let [seg (if (= segment "field") "this" segment)]
+    ;; Generate a formal pop command in VM
     (write-vm! ctx (str "pop " seg " " index))))
 
+;;Generating arithmetic commands
 (defn write-arithmetic! [ctx command]
+  ;; accepts an arithmetic command (add, sub, neg, not) and prints it directly on its own line
   (write-vm! ctx command))
 
 ;; =================================================================================
