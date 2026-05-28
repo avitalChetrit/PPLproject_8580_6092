@@ -150,64 +150,73 @@
 ;; --- פונקציות הניתוח ומחולל הקוד (Compilation Engine) ---
 ;; =================================================================================
 
+;;Department analysis
 (defn compile-class [ctx]
-  (next-token! ctx) ;; 'class'
-  (let [c-name (next-token! ctx)]
-    (swap! ctx assoc :class-name c-name))
-  (next-token! ctx) ;; '{'
+  (next-token! ctx) ;; Swallows the reserved word 'class'
+  (let [c-name (next-token! ctx)];; Swallows the department name
+    (swap! ctx assoc :class-name c-name));; Saves the class name in the context
+  (next-token! ctx)  ;; swallows '{'
 
+  ;; As long as the next token is a class-level variable definition (static or field), parse the line
   (while (#{"static" "field"} (peek-token ctx))
     (compile-class-var-dec ctx))
-
+  ;; As long as the next token is a subroutine definition (constructor, function, or method), parse it
   (while (#{"constructor" "function" "method"} (peek-token ctx))
     (compile-subroutine ctx))
 
-  (next-token! ctx)) ;; '}'
+  (next-token! ctx))  ;; swallows'}' and end the class
 
+;;Defining class variables
 (defn compile-class-var-dec [ctx]
-  (let [kind (next-token! ctx)
-        type (next-token! ctx)
-        name (next-token! ctx)]
-    (add-symbol! ctx name type kind)
+  (let [kind (next-token! ctx);; Swallows the variable type ('static' or 'field')
+        type (next-token! ctx);; Swallows the type ('int', 'char', 'boolean' or class name)
+        name (next-token! ctx)];; Swallows the first variable name
+    (add-symbol! ctx name type kind);; Adds the variable to the class symbol table
+    ;; Handling a comma-separated list of variables on the same line (e.g.: field int x, y, z;)
     (while (= "," (peek-token ctx))
-      (next-token! ctx)
-      (add-symbol! ctx (next-token! ctx) type kind))
-    (next-token! ctx))) ;; ';'
+      (next-token! ctx);; swallows the comma ','
+      (add-symbol! ctx (next-token! ctx) type kind));; Swallows the next variable name and adds it to the table
+    (next-token! ctx))) ;;swallows ';'
 
+;;Function/Method/Constructor Analysis
 (defn compile-subroutine [ctx]
-  (reset-subroutine-table! ctx)
-  (let [subroutine-kind (next-token! ctx)
-        return-type (next-token! ctx)
-        subroutine-name (next-token! ctx)]
+  (reset-subroutine-table! ctx);; Rule: Resets the local symbol table and counters on entry to a new function
+  (let [subroutine-kind (next-token! ctx);; Swallows the subroutine type ('constructor', 'function', 'method')
+        return-type (next-token! ctx);; Swallows the return type (void or data type)
+        subroutine-name (next-token! ctx)];; Swallows the subroutine name
 
+    ;; Method rule: If this is a method, the first argument (index 0) must be the object itself ("this")
     (when (= subroutine-kind "method")
       (add-symbol! ctx "this" (:class-name @ctx) "argument"))
 
-    (next-token! ctx) ;; '('
-    (compile-parameter-list ctx)
+    (next-token! ctx) ;; Swallows'('
+    (compile-parameter-list ctx);; Parses the parameter list and inserts them into the symbol table
     (next-token! ctx) ;; ')'
 
     (next-token! ctx) ;; '{'
+    ;; As long as there are declarations of local variables (var), parse them and insert them into the table
     (while (= "var" (peek-token ctx))
       (compile-var-dec ctx))
 
+    ;; Generating the function definition command in the VM: function ClassName.SubroutineName NumOfLocals
     (let [num-locals (get-in @ctx [:indices "local"])
           full-subroutine-name (str (:class-name @ctx) "." subroutine-name)]
       (write-vm! ctx (str "function " full-subroutine-name " " num-locals)))
 
+    ;; If this is a constructor: allocate memory in the heap for the fields of the new object
     (cond
-      (= subroutine-kind "constructor")
+      (= subroutine-kind "constructor");; Pushes the number of fields to be allocated
       (let [num-fields (get-in @ctx [:indices "field"])]
-        (write-push! ctx "constant" num-fields)
-        (write-vm! ctx "call Memory.alloc 1")
-        (write-pop! ctx "pointer" 0))
-
+        (write-push! ctx "constant" num-fields);; Pushes the number of fields to be allocated
+        (write-vm! ctx "call Memory.alloc 1");; Calls the operating system to allocate memory
+        (write-pop! ctx "pointer" 0));; Anchors the current object base into pointer 0 (this segment)
+      ;; If this is a method: anchor the object received as argument 0 to be the current 'this'
       (= subroutine-kind "method")
       (do
-        (write-push! ctx "argument" 0)
-        (write-pop! ctx "pointer" 0)))
+        (write-push! ctx "argument" 0);; Pushes the first argument (the object pointer)
+        (write-pop! ctx "pointer" 0)));; casts to pointer 0 so that field references work on the correct object
 
-    (compile-statements ctx)
+    (compile-statements ctx);; Parses and generates code for all commands within the function body
     (next-token! ctx))) ;; '}'
 
 (defn compile-parameter-list [ctx]
