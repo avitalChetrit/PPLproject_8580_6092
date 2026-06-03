@@ -66,7 +66,7 @@
     :else
     [:identifier t]))
 ;; =================================================================================
-;; --- תשתית ניהול המצב: טבלת סמלים ומחולל קוד VM (Symbol Table & VM Writer) ---
+;; --- State Management Infrastructure: Symbol Table & VM Writer ---
 ;; =================================================================================
 
 (defn create-context [tokens writer]
@@ -147,10 +147,10 @@
   (write-vm! ctx command))
 
 ;; =================================================================================
-;; --- פונקציות הניתוח ומחולל הקוד (Compilation Engine) ---
+;; --- Parsing Engine & Compilation Engine ---
 ;; =================================================================================
 
-;;Department analysis
+;; Class analysis
 (defn compile-class [ctx]
   (next-token! ctx) ;; Swallows the reserved word 'class'
   (let [c-name (next-token! ctx)];; Swallows the department name
@@ -169,14 +169,14 @@
 ;;Defining class variables
 (defn compile-class-var-dec [ctx]
   (let [kind (next-token! ctx);; Swallows the variable type ('static' or 'field')
-        type (next-token! ctx);; Swallows the type ('int', 'char', 'boolean' or class name)
-        name (next-token! ctx)];; Swallows the first variable name
-    (add-symbol! ctx name type kind);; Adds the variable to the class symbol table
-    ;; Handling a comma-separated list of variables on the same line (e.g.: field int x, y, z;)
-    (while (= "," (peek-token ctx))
-      (next-token! ctx);; swallows the comma ','
-      (add-symbol! ctx (next-token! ctx) type kind));; Swallows the next variable name and adds it to the table
-    (next-token! ctx))) ;;swallows ';'
+    type (next-token! ctx);; Swallows the type ('int', 'char', 'boolean' or class name)
+    name (next-token! ctx)];; Swallows the first variable name
+(add-symbol! ctx name type kind);; Adds the variable to the class symbol table
+;; Handling a comma-separated list of variables on the same line (e.g.: field int x, y, z;)
+(while (= "," (peek-token ctx))
+  (next-token! ctx);; swallows the comma ','
+  (add-symbol! ctx (next-token! ctx) type kind));; Swallows the next variable name and adds it to the table
+(next-token! ctx))) ;;swallows ';'
 
 ;;Function/Method/Constructor Analysis
 (defn compile-subroutine [ctx]
@@ -220,27 +220,36 @@
     (next-token! ctx))) ;; '}'
 
 (defn compile-parameter-list [ctx]
+  ;; Check if the parameter list is not empty (i.e., the next token is not a closing parenthesis)
   (when-not (= ")" (peek-token ctx))
+    ;; Extract the type and name of the first parameter from the token stream
     (let [type (next-token! ctx)
           name (next-token! ctx)]
+      ;; Register the first parameter in the subroutine symbol table as an 'argument'
       (add-symbol! ctx name type "argument")
+      ;; Process additional parameters separated by commas (e.g., int x, char c)
       (while (= "," (peek-token ctx))
-        (next-token! ctx)
+        (next-token! ctx) ;; Consume the comma separator ','
+        ;; Extract the type and name of the next parameter in the list
         (let [next-type (next-token! ctx)
               next-name (next-token! ctx)]
+          ;; Register the additional parameter into the subroutine symbol table
           (add-symbol! ctx next-name next-type "argument"))))))
 
 (defn compile-var-dec [ctx]
-  (next-token! ctx) ;; 'var'
+  (next-token! ctx) ;; Consume 'var' keyword
   (let [type (next-token! ctx)
         name (next-token! ctx)]
+    ;; Register the first local variable in the symbol table
     (add-symbol! ctx name type "local")
+    ;; Process multiple variables declared on the same line separated by commas (e.g., var int x, y;)
     (while (= "," (peek-token ctx))
-      (next-token! ctx)
-      (add-symbol! ctx (next-token! ctx) type "local"))
-    (next-token! ctx))) ;; ';'
+      (next-token! ctx) ;; Consume ','
+      (add-symbol! ctx (next-token! ctx) type "local")) ;; Register subsequent variables
+    (next-token! ctx))) ;; Consume the trailing ';'
 
 (defn compile-statements [ctx]
+  ;; Continually parse statements as long as the next token matches a valid Jack statement keyword
   (while (#{"let" "if" "while" "do" "return"} (peek-token ctx))
     (case (peek-token ctx)
       "let"    (compile-let ctx)
@@ -250,126 +259,145 @@
       "return" (compile-return ctx))))
 
 (defn compile-let [ctx]
-  (next-token! ctx) ;; 'let'
+  (next-token! ctx) ;; Consume 'let' keyword
   (let [var-name (next-token! ctx)
         sym (lookup-symbol ctx var-name)
         is-array (= "[" (peek-token ctx))]
 
+    ;; Check if we are handling an array assignment (e.g., let arr[i] = expr;)
     (if is-array
       (do
+        ;; Push array base address
         (write-push! ctx (:kind sym) (:index sym))
-        (next-token! ctx) ;; '['
+        (next-token! ctx) ;; Consume '['
         (compile-expression ctx)
-        (next-token! ctx) ;; ']'
+        (next-token! ctx) ;; Consume ']'
+        ;; Calculate target element address: base address + index offset
         (write-arithmetic! ctx "add")
 
-        (next-token! ctx) ;; '='
+        (next-token! ctx) ;; Consume '='
         (compile-expression ctx)
 
+        ;; Use temp segment to safely assign the calculated value to the array element address via pointer 1
         (write-pop! ctx "temp" 0)
         (write-pop! ctx "pointer" 1)
         (write-push! ctx "temp" 0)
         (write-pop! ctx "that" 0))
 
+      ;; Regular variable assignment (e.g., let x = expr;)
       (do
-        (next-token! ctx) ;; '='
+        (next-token! ctx) ;; Consume '='
         (compile-expression ctx)
+        ;; Pop the evaluated value directly into the variable's memory segment
         (write-pop! ctx (:kind sym) (:index sym))))
-    (next-token! ctx))) ;; ';'
+    (next-token! ctx))) ;; Consume ';'
 
 (defn compile-if [ctx]
+  ;; Generate three distinct labels to support code jumping for conditional branching
   (let [label-true (gen-label! ctx "if")
         label-false (gen-label! ctx "if")
         label-end (gen-label! ctx "if")]
-    (next-token! ctx) ;; 'if'
-    (next-token! ctx) ;; '('
+    (next-token! ctx) ;; Consume 'if'
+    (next-token! ctx) ;; Consume '('
     (compile-expression ctx)
-    (next-token! ctx) ;; ')'
+    (next-token! ctx) ;; Consume ')'
 
+    ;; Conditional flow branching using VM instructions
     (write-vm! ctx (str "if-goto " label-true))
     (write-vm! ctx (str "goto " label-false))
     (write-vm! ctx (str "label " label-true))
 
-    (next-token! ctx) ;; '{'
+    (next-token! ctx) ;; Consume '{'
     (compile-statements ctx)
-    (next-token! ctx) ;; '}'
+    (next-token! ctx) ;; Consume '}'
 
+    ;; Check if an optional 'else' clause exists
     (if (= "else" (peek-token ctx))
       (do
         (write-vm! ctx (str "goto " label-end))
         (write-vm! ctx (str "label " label-false))
-        (next-token! ctx) ;; 'else'
-        (next-token! ctx) ;; '{'
+        (next-token! ctx) ;; Consume 'else'
+        (next-token! ctx) ;; Consume '{'
         (compile-statements ctx)
-        (next-token! ctx) ;; '}'
+        (next-token! ctx) ;; Consume '}'
         (write-vm! ctx (str "label " label-end)))
       (write-vm! ctx (str "label " label-false)))))
 
 (defn compile-while [ctx]
+  ;; Generate unique labels for looping back and for breaking out of the loop
   (let [label-exp (gen-label! ctx "while")
         label-end (gen-label! ctx "if")]
-    (write-vm! ctx (str "label " label-exp))
-    (next-token! ctx) ;; 'while'
-    (next-token! ctx) ;; '('
+    (write-vm! ctx (str "label " label-exp)) ;; Label marking the start of expression evaluation
+    (next-token! ctx) ;; Consume 'while'
+    (next-token! ctx) ;; Consume '('
     (compile-expression ctx)
-    (next-token! ctx) ;; ')'
+    (next-token! ctx) ;; Consume ')'
 
+    ;; Negate condition; if false (zero), jump out of the loop body
     (write-arithmetic! ctx "not")
     (write-vm! ctx (str "if-goto " label-end))
 
-    (next-token! ctx) ;; '{'
+    (next-token! ctx) ;; Consume '{'
     (compile-statements ctx)
-    (next-token! ctx) ;; '}'
+    (next-token! ctx) ;; Consume '}'
 
-    (write-vm! ctx (str "goto " label-exp))
-    (write-vm! ctx (str "label " label-end))))
+    (write-vm! ctx (str "goto " label-exp)) ;; Loop back to re-evaluate condition
+    (write-vm! ctx (str "label " label-end)))) ;; Exit label
 
 (defn compile-do [ctx]
-  (next-token! ctx) ;; 'do'
+  (next-token! ctx) ;; Consume 'do' keyword
   (let [first-id (next-token! ctx)]
     (cond
+      ;; Case A: Direct method call on the current object instance (e.g., do print();)
       (= "(" (peek-token ctx))
       (do
-        (write-push! ctx "pointer" 0)
-        (next-token! ctx) ;; '('
+        (write-push! ctx "pointer" 0) ;; Pass 'this' as the implicit first argument
+        (next-token! ctx) ;; Consume '('
         (let [n-args (compile-expression-list ctx)]
-          (next-token! ctx) ;; ')'
+          (next-token! ctx) ;; Consume ')'
+          ;; Call routine with class prefix and increment argument count to account for 'this'
           (write-vm! ctx (str "call " (:class-name @ctx) "." first-id " " (inc n-args)))))
 
+      ;; Case B: Qualified subroutine call via dot notation (e.g., do Math.sqrt() or do obj.method())
       (= "." (peek-token ctx))
       (do
-        (next-token! ctx) ;; '.'
+        (next-token! ctx) ;; Consume '.'
         (let [subroutine-name (next-token! ctx)
               sym (lookup-symbol ctx first-id)]
-          (next-token! ctx) ;; '('
+          (next-token! ctx) ;; Consume '('
           (if sym
+            ;; If the identifier exists in the symbol table, it is an object method invocation
             (do
-              (write-push! ctx (:kind sym) (:index sym))
+              (write-push! ctx (:kind sym) (:index sym)) ;; Pass object reference as first argument
               (let [n-args (compile-expression-list ctx)]
-                (next-token! ctx) ;; ')'
+                (next-token! ctx) ;; Consume ')'
                 (write-vm! ctx (str "call " (:type sym) "." subroutine-name " " (inc n-args)))))
+            ;; If not found, it is a static function call belonging to another Class
             (let [n-args (compile-expression-list ctx)]
-              (next-token! ctx) ;; ')'
+              (next-token! ctx) ;; Consume ')'
               (write-vm! ctx (str "call " first-id "." subroutine-name " " n-args))))))))
 
-  (next-token! ctx) ;; ';'
-  (write-pop! ctx "temp" 0))
+  (next-token! ctx) ;; Consume ';'
+  (write-pop! ctx "temp" 0)) ;; 'do' statements ignore return values; pop output into temp segment to discard it
 
 (defn compile-return [ctx]
-  (next-token! ctx) ;; 'return'
+  (next-token! ctx) ;; Consume 'return' keyword
+  ;; If it's a void return, push a dummy 0 value onto the stack per Jack specs
   (if (= ";" (peek-token ctx))
     (write-push! ctx "constant" 0)
-    (compile-expression ctx))
-  (next-token! ctx) ;; ';'
+    (compile-expression ctx)) ;; Evaluate return expression
+  (next-token! ctx) ;; Consume ';'
   (write-vm! ctx "return"))
 
 (defn compile-expression [ctx]
-  (compile-term ctx)
+  (compile-term ctx) ;; Compile the first operand term
+  ;; Loop to handle sequential binary operations matching operational precedence signs
   (while (and (peek-token ctx)
               (= 1 (count (peek-token ctx)))
               (op-symbols (first (peek-token ctx))))
     (let [op (next-token! ctx)]
-      (compile-term ctx)
+      (compile-term ctx) ;; Compile right-hand operand term
+      ;; Emit corresponding VM command or OS method call depending on the operator symbol
       (case op
         "+" (write-arithmetic! ctx "add")
         "-" (write-arithmetic! ctx "sub")
@@ -383,10 +411,10 @@
 
 (defn compile-term [ctx]
   (let [next-t (peek-token ctx)
-        ;; classify-token מחזירה זוג: [סוג_הטוקן, הערך_הנקי_שלו]
+        ;; classify-token returns a pair: [token_tag, clean_value]
         [token-tag token-val] (classify-token next-t)]
     (cond
-      ;; 1. טיפול באופרטורים אונאריים (שלילה או מינוס)
+      ;; 1. Handling unary operators (negation or minus)
       (#{"-" "~"} next-t)
       (do
         (next-token! ctx)
@@ -395,114 +423,124 @@
           (write-arithmetic! ctx "neg")
           (write-arithmetic! ctx "not")))
 
-      ;; 2. טיפול בביטוי העטוף בסוגריים ( Expression )
+      ;; 2. Handling expressions enclosed in parentheses ( Expression )
       (= "(" next-t)
       (do
-        (next-token! ctx) ;; בולע את '('
+        (next-token! ctx) ;; Consumes '('
         (compile-expression ctx)
-        (next-token! ctx)) ;; בולע את ')'
+        (next-token! ctx)) ;; Consumes ')'
 
-      ;; 3. קבוע מספרי (Integer)
+      ;; 3. Integer constants
       (= token-tag :integerConstant)
       (do
-        (next-token! ctx) ;; בולע את הטוקן מהזרם
-        (write-push! ctx "constant" token-val)) ;; משתמש בערך המספרי התקין
+        (next-token! ctx) ;; Consumes the token from the stream
+        (write-push! ctx "constant" token-val)) ;; Uses the valid numeric value
 
-      ;; 4. קבוע מחרוזת (String)
+      ;; 4. String constants
       (= token-tag :stringConstant)
-      (let [_ (next-token! ctx) ;; בולע את הטוקן הגולמי מהזרם
-            len (count token-val)] ;; token-val הוא כבר המחרוזת הנקייה ללא גרשיים!
+      (let [_ (next-token! ctx) ;; Consumes the raw token from the stream
+            len (count token-val)] ;; token-val is already the clean string without quotes!
         (write-push! ctx "constant" len)
         (write-vm! ctx "call String.new 1")
         (doseq [ch token-val]
           (write-push! ctx "constant" (int ch))
           (write-vm! ctx "call String.appendChar 2")))
 
-      ;; 5. קבועים מובנים בשפה (false, null)
+      ;; 5. Built-in constants (false, null)
       (#{"false" "null"} next-t)
       (do (next-token! ctx) (write-push! ctx "constant" 0))
 
-      ;; 6. הקבוע המובנה true
+      ;; 6. Built-in constant true
       (= "true" next-t)
       (do (next-token! ctx) (write-push! ctx "constant" 0) (write-arithmetic! ctx "not"))
 
-      ;; 7. המילה השמורה this
+      ;; 7. Reserved word 'this'
       (= "this" next-t)
       (do (next-token! ctx) (write-push! ctx "pointer" 0))
 
-      ;; 8. טיפול במזהים: משתנים, מערכים וקריאות לפונקציות
+      ;; 8. Handling identifiers: variables, arrays, and function calls
       :else
       (let [first-id (next-token! ctx)
             lookahead (peek-token ctx)]
         (cond
-          ;; א. גישה לאיבר במערך: arr[expression]
+          ;; a. Array element access: arr[expression]
           (= "[" lookahead)
           (let [sym (lookup-symbol ctx first-id)]
             (write-push! ctx (:kind sym) (:index sym))
-            (next-token! ctx) ;; בולע את '['
+            (next-token! ctx) ;; Consumes '['
             (compile-expression ctx)
-            (next-token! ctx) ;; בולע את ']'
+            (next-token! ctx) ;; Consumes ']'
             (write-arithmetic! ctx "add")
             (write-pop! ctx "pointer" 1)
             (write-push! ctx "that" 0))
 
-          ;; ב. קריאה לפונקציה/מתודה מובלעת בתוך ביטוי
+          ;; b. Implicit function/method call inside an expression
           (#{"(" "."} lookahead)
           (do
-            (next-token! ctx) ;; בולע את ה-'.' או את ה-'('
+            (next-token! ctx) ;; Consumes '.' or '('
             (if (= "(" lookahead)
               (do
                 (write-push! ctx "pointer" 0)
                 (let [n-args (compile-expression-list ctx)]
-                  (next-token! ctx) ;; בולע ')'
+                  (next-token! ctx) ;; Consumes ')'
                   (write-vm! ctx (str "call " (:class-name @ctx) "." first-id " " (inc n-args)))))
               (let [subroutine-name (next-token! ctx)]
-                (next-token! ctx) ;; בולע את ה-'(' שאחרי שם הפונקציה
+                (next-token! ctx) ;; Consumes '(' following the subroutine name
                 (let [sym (lookup-symbol ctx first-id)]
                   (if sym
                     (do
                       (write-push! ctx (:kind sym) (:index sym))
                       (let [n-args (compile-expression-list ctx)]
-                        (next-token! ctx) ;; בולע ')'
+                        (next-token! ctx) ;; Consumes ')'
                         (write-vm! ctx (str "call " (:type sym) "." subroutine-name " " (inc n-args)))))
                     (let [n-args (compile-expression-list ctx)]
-                      (next-token! ctx) ;; בולע ')'
+                      (next-token! ctx) ;; Consumes ')'
                       (write-vm! ctx (str "call " first-id "." subroutine-name " " n-args))))))))
 
-          ;; ג. משתנה רגיל (מקומי, ארגומנט או שדה)
+          ;; c. Regular variable (local, argument, or field)
           :else
           (let [sym (lookup-symbol ctx first-id)]
             (write-push! ctx (:kind sym) (:index sym))))))))
+
 (defn compile-expression-list [ctx]
   (let [arg-count (atom 0)]
+    ;; Check if the expression list is empty (i.e., immediate closing parenthesis)
     (when-not (= ")" (peek-token ctx))
-      (compile-expression ctx)
+      (compile-expression ctx) ;; Compile first argument expression
       (swap! arg-count inc)
+      ;; Loop through subsequent expression arguments separated by commas
       (while (= "," (peek-token ctx))
-        (next-token! ctx)
-        (compile-expression ctx)
+        (next-token! ctx) ;; Consume ',' delimiter
+        (compile-expression ctx) ;; Compile next argument expression
         (swap! arg-count inc)))
-    @arg-count))
+    @arg-count)) ;; Return total count of processed expressions/arguments
 
-;; --- פונקציית הריצה הראשית (Main) ---
+;; --- Main Execution Function ---
 (defn -main [& args]
+  ;; Retrieve directory path argument from command line parameters or prompt user interactively
   (let [raw-path (or (first args)
                      (do (println "Please enter the directory path:")
                          (read-line)))
         path (str/trim (str raw-path))
         dir (io/file path)]
+    ;; Validate specified file path existence
     (if (.exists dir)
+      ;; Check whether target is a directory or single standalone file, then collect target .jack files
       (let [files (if (.isDirectory dir)
                     (filter #(str/ends-with? (.getName %) ".jack") (.listFiles dir))
                     [dir])]
+        ;; Notify if directory contains no valid source code components
         (if (empty? files)
           (println "No .jack files found in the directory.")
+          ;; Process source compilation incrementally for each discovered target source file
           (doseq [f files]
             (let [file-content (slurp f)
                   tokens (tokenize file-content)
+                  ;; Construct equivalent .vm destination file naming blueprint
                   output-path (str (str/replace (.getAbsolutePath f) #"\.jack$" "") ".vm")]
+              ;; Open resource stream instance for file manipulation tasks
               (with-open [writer (io/writer output-path)]
                 (let [ctx (create-context tokens writer)]
-                  (compile-class ctx)))
+                  (compile-class ctx))) ;; Ignite compiler parser sequencing
               (println "Created VM Code:" (.getName (io/file output-path)))))))
       (println "Error: Directory not found. Checked path: [" path "]"))))
